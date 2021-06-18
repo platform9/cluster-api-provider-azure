@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -96,6 +97,10 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mg
 
 // Reconcile idempotently gets, creates, and updates a managed cluster.
 func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedCluster", req.Name)
@@ -110,7 +115,7 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	// Fetch the AzureManagedCluster instance
 	aksCluster := &infrav1exp.AzureManagedCluster{}
-	err := r.Get(ctx, req.NamespacedName, aksCluster)
+	err = r.Get(ctx, req.NamespacedName, aksCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil

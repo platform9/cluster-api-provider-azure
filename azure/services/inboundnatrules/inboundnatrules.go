@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/loadbalancers"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -54,6 +55,7 @@ func New(scope InboundNatScope) *Service {
 
 // Reconcile gets/creates/updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, _ = trace.CtxWithCorrID(ctx)
 	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.Service.Reconcile")
 	defer span.End()
 

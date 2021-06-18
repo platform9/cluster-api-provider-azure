@@ -38,6 +38,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -60,6 +61,7 @@ func (r *AzureJSONMachinePoolReconciler) SetupWithManager(ctx context.Context, m
 
 // Reconcile reconciles the Azure json for AzureMachinePool objects.
 func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, _ = pkgtrace.CtxWithCorrID(ctx)
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)

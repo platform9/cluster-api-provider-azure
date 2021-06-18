@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/networkinterfaces"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -79,6 +80,7 @@ func New(scope VMScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, _ = trace.CtxWithCorrID(ctx)
 	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Reconcile")
 	defer span.End()
 

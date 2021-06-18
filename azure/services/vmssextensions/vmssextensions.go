@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -50,7 +51,8 @@ func New(scope VMSSExtensionScope) *Service {
 
 // Reconcile creates or updates the VMSS extension.
 func (s *Service) Reconcile(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "vmssextensions.Service.Reconcile")
+	ctx, _ = trace.CtxWithCorrID(ctx)
+	ctx, span := tele.Tracer().Start(ctx, "vmssextensions.Service.Reconcile")
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {

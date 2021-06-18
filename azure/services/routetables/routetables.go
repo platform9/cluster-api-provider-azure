@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -53,6 +54,7 @@ func New(scope *scope.ClusterScope) *Service {
 
 // Reconcile gets/creates/updates a route table.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, _ = trace.CtxWithCorrID(ctx)
 	ctx, span := tele.Tracer().Start(ctx, "routetables.Service.Reconcile")
 	defer span.End()
 

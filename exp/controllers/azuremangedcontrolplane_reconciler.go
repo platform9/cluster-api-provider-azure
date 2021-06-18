@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -64,6 +65,10 @@ func newAzureManagedControlPlaneReconciler(scope *scope.ManagedControlPlaneScope
 
 // Reconcile reconciles all the services in a predetermined order.
 func (r *azureManagedControlPlaneReconciler) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
+	ctx, _, err := trace.CtxWithCorrID(ctx)
+	if err != nil {
+		return err
+	}
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedControlPlaneReconciler.Reconcile")
 	defer span.End()
 

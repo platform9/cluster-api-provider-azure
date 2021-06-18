@@ -25,6 +25,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -42,6 +43,7 @@ type Spec struct {
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
+	ctx, _ = trace.CtxWithCorrID(ctx)
 	ctx, span := tele.Tracer().Start(ctx, "agentpools.Service.Reconcile")
 	defer span.End()
 

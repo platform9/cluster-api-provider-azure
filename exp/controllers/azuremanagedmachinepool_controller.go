@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -122,6 +123,10 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedMachinePool", req.Name)
@@ -136,7 +141,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 
 	// Fetch the AzureManagedMachinePool instance
 	infraPool := &infrav1exp.AzureManagedMachinePool{}
-	err := r.Get(ctx, req.NamespacedName, infraPool)
+	err = r.Get(ctx, req.NamespacedName, infraPool)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil

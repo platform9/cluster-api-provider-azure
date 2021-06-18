@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -63,6 +64,7 @@ func New(scope LBScope) *Service {
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
+	ctx, _ = trace.CtxWithCorrID(ctx)
 	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.Reconcile")
 	defer span.End()
 

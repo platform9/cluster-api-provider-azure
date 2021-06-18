@@ -45,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -108,6 +109,10 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 
 // Reconcile idempotently gets, creates, and updates a managed control plane.
 func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedControlPlane", req.Name)
@@ -122,7 +127,7 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 
 	// Fetch the AzureManagedControlPlane instance
 	azureControlPlane := &infrav1exp.AzureManagedControlPlane{}
-	err := r.Get(ctx, req.NamespacedName, azureControlPlane)
+	err = r.Get(ctx, req.NamespacedName, azureControlPlane)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil

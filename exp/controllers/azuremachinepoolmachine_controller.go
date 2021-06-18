@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
+	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -127,6 +128,10 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
+	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampmr.ReconcileTimeout))
 	defer cancel()
 	logger := ampmr.Log.WithValues("namespace", req.Namespace, "azureMachinePoolMachine", req.Name)
@@ -140,7 +145,7 @@ func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, r
 	defer span.End()
 
 	machine := &infrav1exp.AzureMachinePoolMachine{}
-	err := ampmr.Get(ctx, req.NamespacedName, machine)
+	err = ampmr.Get(ctx, req.NamespacedName, machine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -352,6 +357,10 @@ func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) 
 
 // Reconcile will reconcile the state of the Machine Pool Machine with the state of the Azure VMSS VM.
 func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error {
+	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
+	if err != nil {
+		return err
+	}
 	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Reconcile")
 	defer span.End()
 
