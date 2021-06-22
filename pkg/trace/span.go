@@ -63,7 +63,6 @@ func StartSpan(
 		return nil, CorrID(""), nil, err
 	}
 	return ctx, corrID, span, nil
-
 }
 
 // ctxWithCorrID creates a CorrID and creates a new context.Context
