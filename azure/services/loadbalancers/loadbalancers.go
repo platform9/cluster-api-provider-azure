@@ -64,8 +64,14 @@ func New(scope LBScope) *Service {
 
 // Reconcile gets/creates/updates a load balancer.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _ = trace.CtxWithCorrID(ctx)
-	ctx, span := tele.Tracer().Start(ctx, "loadbalancers.Service.Reconcile")
+	ctx, _, span, err := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"loadbalancers.Service.Reconcile",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	for _, lbSpec := range s.Scope.LBSpecs() {

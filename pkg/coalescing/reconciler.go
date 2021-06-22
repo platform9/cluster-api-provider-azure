@@ -91,15 +91,18 @@ func NewReconciler(upstream reconcile.Reconciler, cache ReconcileCacher, log log
 
 // Reconcile sends a request to the upstream reconciler if the request is outside of the debounce window.
 func (rc *reconciler) Reconcile(ctx context.Context, r reconcile.Request) (reconcile.Result, error) {
-	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	ctx, span := tele.Tracer().Start(ctx, "controllers.reconciler.Reconcile",
+	ctx, _, span, err := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.reconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", r.Namespace),
 			attribute.String("name", r.Name),
-		))
+		),
+	)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	defer span.End()
 
 	log := rc.log.WithValues("request", r.String())

@@ -55,8 +55,14 @@ func New(scope VNetScope) *Service {
 
 // Reconcile gets/creates/updates a virtual network.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _ = trace.CtxWithCorrID(ctx)
-	ctx, span := tele.Tracer().Start(ctx, "virtualnetworks.Service.Reconcile")
+	ctx, _, span, err := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"virtualnetworks.Service.Reconcile",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	// Following should be created upstream and provided as an input to NewService

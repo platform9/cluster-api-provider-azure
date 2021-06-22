@@ -97,20 +97,23 @@ func (r *AzureManagedClusterReconciler) SetupWithManager(ctx context.Context, mg
 
 // Reconcile idempotently gets, creates, and updates a managed cluster.
 func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedCluster", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedClusterReconciler.Reconcile",
+	ctx, _, span, err := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.AzureManagedClusterReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureManagedCluster"),
-		))
+		),
+	)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	defer span.End()
 
 	// Fetch the AzureManagedCluster instance

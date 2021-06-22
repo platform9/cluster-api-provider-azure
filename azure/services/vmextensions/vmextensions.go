@@ -52,8 +52,14 @@ func New(scope VMExtensionScope) *Service {
 
 // Reconcile creates or updates the VM extension.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _ = trace.CtxWithCorrID(ctx)
-	ctx, span := tele.Tracer().Start(ctx, "vmextensions.Service.Reconcile")
+	ctx, _, span, err := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"vmextensions.Service.Reconcile",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMExtensionSpecs() {

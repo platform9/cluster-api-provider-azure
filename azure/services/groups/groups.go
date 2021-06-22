@@ -53,8 +53,14 @@ func New(scope GroupScope) *Service {
 
 // Reconcile gets/creates/updates a resource group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _ = trace.CtxWithCorrID(ctx)
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.Reconcile")
+	ctx, _, span, err := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"groups.Service.Reconcile",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	if _, err := s.client.Get(ctx, s.Scope.ResourceGroup()); err == nil {
@@ -76,7 +82,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		})),
 	}
 
-	_, err := s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
+	_, err = s.client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), group)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create resource group %s", s.Scope.ResourceGroup())
 	}

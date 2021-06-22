@@ -58,8 +58,14 @@ func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile creates or updates availability sets.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _ = trace.CtxWithCorrID(ctx)
-	ctx, span := tele.Tracer().Start(ctx, "availabilitysets.Service.Reconcile")
+	ctx, _, span, err := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"availabilitysets.Service.Reconcile",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	availabilitySetName, ok := s.Scope.AvailabilitySet()

@@ -123,20 +123,23 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedMachinePool", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedMachinePoolReconciler.Reconcile",
+	ctx, _, span, err := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.AzureManagedMachinePoolReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureManagedMachinePool"),
-		))
+		),
+	)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	defer span.End()
 
 	// Fetch the AzureManagedMachinePool instance

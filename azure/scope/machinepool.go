@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	machinepool "sigs.k8s.io/cluster-api-provider-azure/azure/scope/strategies/machinepool_deployments"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
@@ -481,7 +482,14 @@ func (m *MachinePoolScope) SetAnnotation(key, value string) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.PatchObject")
+	ctx, _, span, err := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"scope.MachinePoolScope.PatchObject",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
@@ -489,7 +497,14 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachinePoolScope) Close(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.Close")
+	ctx, _, span, startSpanErr := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"scope.MachinePoolScope.Close",
+	)
+	if startSpanErr != nil {
+		return startSpanErr
+	}
 	defer span.End()
 
 	if m.vmssState != nil {

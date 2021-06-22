@@ -62,17 +62,23 @@ func (r *AzureJSONTemplateReconciler) SetupWithManager(ctx context.Context, mgr 
 
 // Reconcile reconciles Azure json secrets for Azure machine templates.
 func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, _ = pkgtrace.CtxWithCorrID(ctx)
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureMachineTemplate", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureJSONTemplateReconciler.Reconcile",
+	ctx, _, span, startSpanErr := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.AzureJSONTemplateReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureMachineTemplate"),
-		))
+		),
+	)
+	if startSpanErr != nil {
+		return ctrl.Result{}, startSpanErr
+	}
 	defer span.End()
 
 	// Fetch the AzureMachineTemplate instance

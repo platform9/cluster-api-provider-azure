@@ -159,22 +159,24 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampr.ReconcileTimeout))
-	defer cancel()
-
-	logger := ampr.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
-
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolReconciler.Reconcile",
+	ctx, _, span, err := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.AzureMachinePoolReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureMachinePool"),
-		))
+		),
+	)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampr.ReconcileTimeout))
+	defer cancel()
+
+	logger := ampr.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
 	azMachinePool := &infrav1exp.AzureMachinePool{}
 	err = ampr.Get(ctx, req.NamespacedName, azMachinePool)

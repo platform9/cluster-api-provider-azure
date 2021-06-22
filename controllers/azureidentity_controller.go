@@ -100,17 +100,23 @@ func (r *AzureIdentityReconciler) SetupWithManager(ctx context.Context, mgr ctrl
 
 // Reconcile reconciles the Azure identity.
 func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, _ = pkgtrace.CtxWithCorrID(ctx)
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(r.ReconcileTimeout))
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureIdentity", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureIdentityReconciler.Reconcile",
+	ctx, _, span, startSpanErr := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.AzureIdentityReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureCluster"),
-		))
+		),
+	)
+	if startSpanErr != nil {
+		return ctrl.Result{}, startSpanErr
+	}
 	defer span.End()
 
 	// identityOwner is the resource that created the identity. This could be either an AzureCluster or AzureManagedControlPlane (if AKS is enabled).

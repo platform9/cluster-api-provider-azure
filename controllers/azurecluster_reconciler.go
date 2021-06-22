@@ -79,8 +79,14 @@ var _ azure.Reconciler = (*azureClusterService)(nil)
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureClusterService) Reconcile(ctx context.Context) error {
-	ctx, _ = pkgtrace.CtxWithCorrID(ctx)
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureClusterService.Reconcile")
+	ctx, _, span, err := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.azureClusterService.Reconcile",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	if err := s.setFailureDomainsForLocation(ctx); err != nil {

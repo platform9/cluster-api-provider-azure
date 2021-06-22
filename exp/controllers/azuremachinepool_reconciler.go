@@ -58,11 +58,14 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 
 // Reconcile reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
-	ctx, _, err := pkgtrace.CtxWithCorrID(ctx)
+	ctx, _, span, err := pkgtrace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"controllers.azureMachinePoolService.Reconcile",
+	)
 	if err != nil {
 		return err
 	}
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolService.Reconcile")
 	defer span.End()
 
 	if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {

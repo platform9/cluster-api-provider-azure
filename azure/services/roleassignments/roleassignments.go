@@ -61,8 +61,14 @@ func New(scope RoleAssignmentScope) *Service {
 
 // Reconcile creates a role assignment.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _ = trace.CtxWithCorrID(ctx)
-	ctx, span := tele.Tracer().Start(ctx, "roleassignments.Service.Reconcile")
+	ctx, _, span, err := trace.StartSpan(
+		ctx,
+		tele.Tracer(),
+		"roleassignments.Service.Reconcile",
+	)
+	if err != nil {
+		return err
+	}
 	defer span.End()
 
 	for _, roleSpec := range s.Scope.RoleAssignmentSpecs() {
