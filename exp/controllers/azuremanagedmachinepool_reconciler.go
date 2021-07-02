@@ -123,15 +123,18 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 		agentPoolSpec.OSDiskSizeGB = *scope.InfraMachinePool.Spec.OSDiskSizeGB
 	}
 
+	scope.V(2).Info("Reconciling agentpool")
 	if err := s.agentPoolsSvc.Reconcile(ctx, agentPoolSpec); err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
 	}
 
+	scope.V(2).Info("Listing scalesets")
 	vmss, err := s.scaleSetsSvc.List(ctx, scope.ControlPlane.Spec.NodeResourceGroupName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to list vmss in resource group %s", scope.ControlPlane.Spec.NodeResourceGroupName)
 	}
 
+	scope.V(2).Info("Matching scalesets to infra pools")
 	var match *compute.VirtualMachineScaleSet
 	for _, ss := range vmss {
 		ss := ss
@@ -141,10 +144,13 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 		}
 	}
 
+	scope.V(2).Info("Checking for match")
 	if match == nil {
+		scope.V(2).Info("No match")
 		return NewAgentPoolVMSSNotFoundError(scope.ControlPlane.Spec.NodeResourceGroupName, scope.InfraMachinePool.Name)
 	}
 
+	scope.V(2).Info("Listing VM instances")
 	instances, err := s.scaleSetsSvc.ListInstances(ctx, scope.ControlPlane.Spec.NodeResourceGroupName, *match.Name)
 	if err != nil {
 		return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
@@ -159,7 +165,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 	scope.InfraMachinePool.Status.Replicas = int32(len(providerIDs))
 	scope.InfraMachinePool.Status.Ready = true
 
-	scope.Logger.Info("reconciled machine pool successfully")
+	scope.V(2).Info("reconciled machine pool successfully")
 	return nil
 }
 
