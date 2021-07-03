@@ -23,6 +23,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/pkg/errors"
+	"github.com/sanity-io/litter"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
@@ -138,6 +139,8 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 	var match *compute.VirtualMachineScaleSet
 	for _, ss := range vmss {
 		ss := ss
+		scope.V(2).Info(fmt.Sprintf("checking scaleset '%s' for match with name '%s'", *ss.Name, scope.InfraMachinePool.Name))
+		litter.Dump(ss.Tags)
 		if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == scope.InfraMachinePool.Name {
 			match = &ss
 			break
