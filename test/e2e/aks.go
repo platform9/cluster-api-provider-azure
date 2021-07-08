@@ -83,7 +83,7 @@ func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input Discov
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAtLeastOneControlPlaneAndMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
-		Lister:      input.Lister,
+		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
 		ClusterName:  input.Cluster.Name,
@@ -107,7 +107,7 @@ func DiscoverAndWaitForControlPlaneReady(ctx context.Context, input DiscoverAndW
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
-		Lister: input.Lister
+		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
 		ClusterName:  input.Cluster.Name,
@@ -138,7 +138,7 @@ func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureMan
 // WaitForControlPlaneAndMachinesReadyInput contains the fields required for checking the status of azure managed control plane machines.
 type WaitForControlPlaneAndMachinesReadyInput struct {
 	Getter       framework.Getter
-	Lister framework.Lister
+	Lister       framework.Lister
 	ControlPlane *infraexpv1.AzureManagedControlPlane
 	ClusterName  string
 	Namespace    string
