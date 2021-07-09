@@ -184,14 +184,6 @@ func WaitForControlPlaneMachinesToExist(ctx context.Context, input WaitForContro
 			Logf("Failed to get machinePool: %+v", err)
 			return false, err
 		}
-		var nodeList corev1.NodeList
-		if err := input.Lister.List(ctx, &nodeList); err != nil {
-			Logf("Failed to list nodes: %+v", err)
-		}
-		Logf("ranging nodes")
-		for _, node := range nodeList.Items {
-			Logf("Node name '%s' and providerID: '%s'", node.Name, node.Spec.ProviderID)
-		}
 		return len(controlPlaneMachinePool.Status.NodeRefs) >= minReplicas.value(controlPlaneMachinePool), nil
 
 	}, intervals...).Should(Equal(true))
