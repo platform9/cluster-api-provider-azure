@@ -309,7 +309,7 @@ var _ = Describe("Workload cluster creation", func() {
 			})
 
 			Context("Cordon and draining a node", func() {
-				AzureMachinePoolDrainSpec(ctx, func() AzureMachinePoolDrainSpecInput{
+				AzureMachinePoolDrainSpec(ctx, func() AzureMachinePoolDrainSpecInput {
 					return AzureMachinePoolDrainSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
 						Namespace:             namespace,
@@ -515,15 +515,15 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			Context("Validating AKS Resources", func() {
-				AKSResourcesValidationSpec(ctx, func() AKSResourcesValidationSpecInput {
-					return AKSResourcesValidationSpecInput{
-						BootstrapClusterProxy: bootstrapClusterProxy,
-						Namespace:             namespace,
-						ClusterName:           clusterName,
-					}
-				})
-			})
+			// Context("Validating AKS Resources", func() {
+			// 	AKSResourcesValidationSpec(ctx, func() AKSResourcesValidationSpecInput {
+			// 		return AKSResourcesValidationSpecInput{
+			// 			BootstrapClusterProxy: bootstrapClusterProxy,
+			// 			Namespace:             namespace,
+			// 			ClusterName:           clusterName,
+			// 		}
+			// 	})
+			// })
 		})
 	})
 
