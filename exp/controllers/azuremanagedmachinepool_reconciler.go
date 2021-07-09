@@ -23,14 +23,21 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/pkg/errors"
-	"github.com/sanity-io/litter"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
+	"sigs.k8s.io/cluster-api/controllers/remote"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	// ManagedMachinePoolScopeName is the sourceName, or more specifically the UserAgent, of client used in AMMP reconciliation.
+	ManagedMachinePoolScopeName = "azuremanagedmachinepoolmachine-scope"
 )
 
 type (
@@ -180,7 +187,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 
 	scope.InfraMachinePool.Spec.ProviderIDList = providerIDs
 	scope.InfraMachinePool.Status.Replicas = int32(len(providerIDs))
-	scope.InfraMachinePool.Status.Ready = true
+	scope.InfraMachinePool.Status.Ready = int32(len(providerIDs)) == int32(*scope.MachinePool.Spec.Replicas)
 
 	scope.V(2).Info("reconciled machine pool successfully")
 	return nil
