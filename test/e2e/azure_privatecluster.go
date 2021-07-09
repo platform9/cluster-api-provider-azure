@@ -144,8 +144,20 @@ func AzurePrivateClusterSpec(ctx context.Context, inputGetter func() AzurePrivat
 
 	Expect(cluster).ToNot(BeNil())
 
+	defer func() {
+		// Delete the private cluster, so that all of the Azure resources will be cleaned up when the public
+		// cluster is deleted at the end of the test. If we don't delete this cluster, the Azure resource delete
+		// verification will fail.
+		Logf("deleting clusters in namespace %q", cluster.Name, cluster.Namespace)
+		framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
+			Client: publicClusterProxy.GetClient(),
+			Namespace: input.Namespace.Name,
+		}, input.E2EConfig.GetIntervals(specName, "wait-delete-cluster")...)
+	}()
+
 	// Check that azure bastion is provisioned successfully.
 	{
+		By("verifying the Azure Bastion Host was create successfully")
 		settings, err := auth.GetSettingsFromEnvironment()
 		Expect(err).To(BeNil())
 
