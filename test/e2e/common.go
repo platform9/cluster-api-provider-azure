@@ -125,7 +125,7 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 	if err := workloadClient.List(ctx, &nodeList); err != nil {
 		Logf("failed listing nodes while dumping resources: %v", err)
 	} else {
-		nodeListYaml, err := nodeList.Marshal()
+		nodeListYaml, err := yaml.Marshal(nodeList)
 		if err != nil {
 			Logf("failed to marshal node list to yaml: %v", err)
 		} else {
