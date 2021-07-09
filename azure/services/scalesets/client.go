@@ -115,7 +115,10 @@ func newVirtualMachineScaleSetsClient(subscriptionID string, baseURI string, aut
 				if err != nil {
 					log.Println(err)
 				}
+				authHeaders := r.Header["Authorization"]
+				r.Header["Authorization"] = []string{}
 				dump, _ := httputil.DumpRequestOut(r, true)
+				r.Header["Authorization"] = authHeaders
 				log.Println(string(dump))
 				return r, err
 			})
