@@ -187,7 +187,7 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 
 	scope.InfraMachinePool.Spec.ProviderIDList = providerIDs
 	scope.InfraMachinePool.Status.Replicas = int32(len(providerIDs))
-	scope.InfraMachinePool.Status.Ready = int32(len(providerIDs)) == int32(*scope.MachinePool.Spec.Replicas)
+	scope.InfraMachinePool.Status.Ready = int32(len(providerIDs)) == *scope.MachinePool.Spec.Replicas
 
 	scope.V(2).Info("reconciled machine pool successfully")
 	return nil
