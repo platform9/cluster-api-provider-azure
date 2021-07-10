@@ -79,7 +79,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
 
-	azureMachinePoolMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1exp.AzureManagedMachinePoolList{}, mgr.GetScheme())
+	clusterToMachinePoolMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1exp.AzureManagedMachinePoolList{}, mgr.GetScheme())
 	if err != nil {
 		return errors.Wrap(err, "failed to create mapper for Cluster to AzureManagedMachinePools")
 	}
@@ -103,7 +103,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	// and avoids a circular loop between AMMP default pool and AMCP causing many extra reconciles.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
+		handler.EnqueueRequestsFromMapFunc(clusterToMachinePoolMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
@@ -179,8 +179,8 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 		return reconcile.Result{}, err
 	}
 
-	if !controlPlane.Status.Initialized {
-		log.Info("AzureManagedControlPlane is not initialized")
+	if !ownerCluster.Status.ControlPlaneReady {
+		log.Info("Cluster is not ready")
 		return reconcile.Result{}, nil
 	}
 
