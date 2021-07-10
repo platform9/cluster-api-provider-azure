@@ -21,9 +21,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-	"net/http/httputil"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
@@ -107,40 +104,6 @@ func newVirtualMachineScaleSetVMsClient(subscriptionID string, baseURI string, a
 func newVirtualMachineScaleSetsClient(subscriptionID string, baseURI string, authorizer autorest.Authorizer) compute.VirtualMachineScaleSetsClient {
 	c := compute.NewVirtualMachineScaleSetsClientWithBaseURI(baseURI, subscriptionID)
 	azure.SetAutoRestClientDefaults(&c.Client, authorizer)
-
-	logRequest := func() autorest.PrepareDecorator {
-		return func(p autorest.Preparer) autorest.Preparer {
-			return autorest.PreparerFunc(func(r *http.Request) (*http.Request, error) {
-				r, err := p.Prepare(r)
-				if err != nil {
-					log.Println(err)
-				}
-				authHeaders := r.Header["Authorization"]
-				r.Header["Authorization"] = []string{}
-				dump, _ := httputil.DumpRequestOut(r, true)
-				r.Header["Authorization"] = authHeaders
-				log.Println(string(dump))
-				return r, err
-			})
-		}
-	}
-
-	logResponse := func() autorest.RespondDecorator {
-		return func(p autorest.Responder) autorest.Responder {
-			return autorest.ResponderFunc(func(r *http.Response) error {
-				err := p.Respond(r)
-				if err != nil {
-					log.Println(err)
-				}
-				dump, _ := httputil.DumpResponse(r, true)
-				log.Println(string(dump))
-				return err
-			})
-		}
-	}
-
-	c.RequestInspector = logRequest()
-	c.ResponseInspector = logResponse()
 
 	// The default number of retries is 3. This means the client will attempt to retry operation results like resource
 	// conflicts (HTTP 409). For a reconciling controller, this is undesirable behavior since if the controller runs
