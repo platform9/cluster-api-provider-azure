@@ -118,12 +118,17 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 
 	var nsenterDs unstructured.Unstructured
 
-	data, err := ioutil.ReadFile(nsenterWorkloadFile)
+	yamlData, err := ioutil.ReadFile(nsenterWorkloadFile)
 	if err != nil {
 		Logf("failed daemonset time synx: %v", err)
 	}
 
-	if err := nsenterDs.Unmarshal(data); err != nil {
+	jsonData, err := yaml.YAMLToJSON(yamlData)
+	if err != nil {
+		Logf("failed to convert nsenter yaml to json: %v", err)
+	}
+
+	if err := nsenterDs.UnmarshalJSON(data); err != nil {
 		Logf("failed daemonset time synx: %v", err)
 	}
 
