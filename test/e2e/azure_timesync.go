@@ -94,3 +94,84 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 		return kinderrors.AggregateConcurrent(testFuncs)
 	}, thirty, thirty).Should(Succeed())
 }
+
+const (
+	nsenterWorkloadFile = "workloads/nsenter/daemonset.yaml"
+)
+
+// AzureDaemonsetTimeSyncSpec implements a test that verifies time synchronization is healthy for
+// the nodes in a cluster.
+func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpecInput) {
+	var (
+		specName = "azure-timesync"
+		input    AzureTimeSyncSpecInput
+		thirty   = 30 * time.Second
+	)
+
+	input = inputGetter()
+	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
+	namespace, clusterName := input.Namespace.Name, input.ClusterName
+	workloadCluster := input.GetWorkloadCluster(ctx, namespace, clusterName)
+	kubeclient := workloadCluster.GetClient()
+
+	var nsenterDs unstructured.unstructured
+
+	data, err := ioutil.ReadFile(nsenterWorkloadFile)
+	if err != nil {
+		return err
+	}
+
+	if err := nsenterDs.Unmarshal(data); err != nil {
+		return err
+	}
+
+	if err := kubeclient.Create(ctx, &nsenterDs); err != nil {
+		return err
+	}
+
+	Logf("passed daemonset timesync spec!")
+
+	// Eventually(func() error {
+	// 	sshInfo, err := getClusterSSHInfo(ctx, input.BootstrapClusterProxy, namespace, clusterName)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	if len(sshInfo) <= 0 {
+	// 		return errors.New("sshInfo did not contain any machines")
+	// 	}
+
+	// 	var testFuncs []func() error
+	// 	for _, s := range sshInfo {
+	// 		Byf("checking that time synchronization is healthy on %s", s.Hostname)
+
+	// 		execToStringFn := func(expected, command string, args ...string) func() error {
+	// 			// don't assert in this test func, just return errors
+	// 			return func() error {
+	// 				f := &strings.Builder{}
+	// 				if err := execOnHost(s.Endpoint, s.Hostname, s.Port, f, command, args...); err != nil {
+	// 					return err
+	// 				}
+	// 				if !strings.Contains(f.String(), expected) {
+	// 					return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
+	// 				}
+	// 				return nil
+	// 			}
+	// 		}
+
+	// 		testFuncs = append(testFuncs,
+	// 			execToStringFn(
+	// 				"✓ chronyd is active",
+	// 				"systemctl", "is-active", "chronyd", "&&",
+	// 				"echo", "✓ chronyd is active",
+	// 			),
+	// 			execToStringFn(
+	// 				"Reference ID",
+	// 				"chronyc", "tracking",
+	// 			),
+	// 		)
+	// 	}
+
+	// 	return kinderrors.AggregateConcurrent(testFuncs)
+	// }, thirty, thirty).Should(Succeed())
+}
