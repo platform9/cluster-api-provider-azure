@@ -145,40 +145,11 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 		"agentpool": scope.InfraMachinePool.Name,
 	})
 
+	scope.V(2).Info(fmt.Sprintf("Listing node in agentpool '%s'", scope.InfraMachinePool.Name))
 	var nodeList corev1.NodeList
 	if err := clusterClient.List(ctx, &nodeList, matchingLabels); err != nil {
 		return errors.Wrapf(err, "failed to list nodes to extract providerIDs")
 	}
-
-	// scope.V(2).Info(fmt.Sprintf("Listing scalesets in resource group '%s'", scope.ControlPlane.Spec.NodeResourceGroupName))
-	// vmss, err := s.scaleSetsSvc.List(ctx, scope.ControlPlane.Spec.NodeResourceGroupName)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "failed to list vmss in resource group %s", scope.ControlPlane.Spec.NodeResourceGroupName)
-	// }
-
-	// scope.V(2).Info("Matching scalesets to infra pools")
-	// var match *compute.VirtualMachineScaleSet
-	// for _, ss := range vmss {
-	// 	ss := ss
-	// 	scope.V(2).Info(fmt.Sprintf("checking scaleset '%s' for match with name '%s'", *ss.Name, scope.InfraMachinePool.Name))
-	// 	litter.Dump(ss.Tags)
-	// 	if ss.Tags["poolName"] != nil && *ss.Tags["poolName"] == scope.InfraMachinePool.Name {
-	// 		match = &ss
-	// 		break
-	// 	}
-	// }
-
-	// scope.V(2).Info("Checking for match")
-	// if match == nil {
-	// 	scope.V(2).Info("No match")
-	// 	return NewAgentPoolVMSSNotFoundError(scope.ControlPlane.Spec.NodeResourceGroupName, scope.InfraMachinePool.Name)
-	// }
-
-	// scope.V(2).Info("Listing VM instances")
-	// instances, err := s.scaleSetsSvc.ListInstances(ctx, scope.ControlPlane.Spec.NodeResourceGroupName, *match.Name)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "failed to reconcile machine pool %s", scope.InfraMachinePool.Name)
-	// }
 
 	var providerIDs = make([]string, len(nodeList.Items))
 	for i := 0; i < len(nodeList.Items); i++ {

@@ -198,7 +198,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c 
 // Cluster, collect the MachinePools belonging to the cluster, then finally projecting the infrastructure reference
 // to the AzureManagedMachinePools.
 func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
-	gvk, err := apiutil.GVKForObject(new(infrav1exp.AzureManagedMachinePool), scheme)
+	gvk, err := apiutil.GVKForObject(new(clusterv1exp.MachinePoolList), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find GVK for AzureManagedMachinePool")
 	}
@@ -231,6 +231,7 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Contex
 		machineList.SetGroupVersionKind(gvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
 		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
+			log.Error(err, "failed to list MachinePools")
 			return nil
 		}
 

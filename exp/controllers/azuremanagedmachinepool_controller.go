@@ -78,10 +78,10 @@ func NewAzureManagedMachinePoolReconciler(client client.Client, log logr.Logger,
 func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
-	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedMachinePool requests
-	azureManagedControlPlaneMapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
+
+	azureMachinePoolMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1exp.AzureManagedMachinePoolList{}, mgr.GetScheme())
 	if err != nil {
-		return errors.Wrap(err, "failed to create AzureManagedControlPlane to AzureManagedMachinePools mapper")
+		return errors.Wrap(err, "failed to create mapper for Cluster to AzureManagedMachinePools")
 	}
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
@@ -91,12 +91,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
-			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"))),
-		).
-		// watch for changes in AzureManagedControlPlanes
-		Watches(
-			&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
-			handler.EnqueueRequestsFromMapFunc(azureManagedControlPlaneMapper),
+			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"), ctrl.LoggerFrom(ctx))),
 		).
 		Build(r)
 	if err != nil {
@@ -104,9 +99,11 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	}
 
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
+	// This catches AMCP transitions to ready since that's a dependency for Cluster ready,
+	// and avoids a circular loop between AMMP default pool and AMCP causing many extra reconciles.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"))),
+		handler.EnqueueRequestsFromMapFunc(azureMachinePoolMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
@@ -182,10 +179,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 		return reconcile.Result{}, err
 	}
 
-	// For non-system node pools, we wait for the control plane to be
-	// initialized, otherwise Azure API will return an error for node pool
-	// CreateOrUpdate request.
-	if infraPool.Name != controlPlane.Spec.DefaultPoolRef.Name && !controlPlane.Status.Initialized {
+	if !controlPlane.Status.Initialized {
 		log.Info("AzureManagedControlPlane is not initialized")
 		return reconcile.Result{}, nil
 	}
