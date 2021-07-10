@@ -172,9 +172,9 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		ready := ds.Status.NumberReady
 		available := ds.Status.NumberAvailable
 		allReadyAndAvailable := desired == ready && desired == available
-		generationOk := ds.Metadata.Generation == ds.Status.ObservedGeneration
+		generationOk := ds.ObjectMeta.Generation == ds.Status.ObservedGeneration
 
-		Logf("want %d instances, found %d ready and %d available. generation: %s, observedGeneration: %s", desired, ready, available, ds.Metadata.Generation, ds.Status.ObservedGeneration)
+		Logf("want %d instances, found %d ready and %d available. generation: %s, observedGeneration: %s", desired, ready, available, ds.ObjectMeta.Generation, ds.Status.ObservedGeneration)
 		return allReadyAndAvailable && generationOk
 	}).Should(Succeed())
 
