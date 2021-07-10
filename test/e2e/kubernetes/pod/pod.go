@@ -19,6 +19,8 @@ limitations under the License.
 package pod
 
 import (
+	"bytes"
+	"io"
 	"os"
 
 	v1 "k8s.io/api/core/v1"
@@ -55,4 +57,34 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod
 	}
 
 	return nil
+}
+
+func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string) (io.ReadWriter, io.ReadWriter, error) {
+	req := clientset.CoreV1().RESTClient().Post().Resource("pods").Name(pod.GetName()).
+		Namespace(pod.GetNamespace()).SubResource("exec")
+	option := &v1.PodExecOptions{
+		Command: command,
+		Stdin:   false,
+		Stdout:  true,
+		Stderr:  true,
+		TTY:     true,
+	}
+	req.VersionedParams(
+		option,
+		scheme.ParameterCodec,
+	)
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return nil, nil, err
+	}
+	stdout, stderr := bytes.NewBuffer(nil), bytes.NewBuffer(nil)
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: stdout,
+		Stderr: stderr,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return stdout, stderr, nil
 }

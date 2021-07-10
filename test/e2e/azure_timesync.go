@@ -116,6 +116,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	namespace, clusterName := input.Namespace.Name, input.ClusterName
 	workloadCluster := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, namespace, clusterName)
 	kubeclient := workloadCluster.GetClient()
+	clientset := workloadCluster.GetClientSet()
 
 	var nsenterDs unstructured.Unstructured
 
@@ -133,55 +134,88 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		Logf("failed daemonset time synx: %v", err)
 	}
 
-	nsenterDs.SetNamespace(namespace)
+	nsenterDs.SetNamespace("default")
 
 	if err := kubeclient.Create(ctx, &nsenterDs); err != nil {
-		Logf("failed daemonset time synx: %v", err)
+		Logf("failed to create daemonset for time sync check: %v", err)
+		return
 	}
 
-	Logf("passed daemonset timesync spec!")
+	var podList corev1.PodList
+	if err := kubeclient.List(ctx, &podList); err != nil {
+		Logf("failed to list pods for daemonset timesync check: %v", err)
+		return
+	}
 
-	// Eventually(func() error {
-	// 	sshInfo, err := getClusterSSHInfo(ctx, input.BootstrapClusterProxy, namespace, clusterName)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	Logf("mapping pods to hostnames")
+	var podMap map[string]corev1.Pod
+	for _, pod := range podList.Items {
+		podMap[pod.Spec.NodeName] = pod
+	}
 
-	// 	if len(sshInfo) <= 0 {
-	// 		return errors.New("sshInfo did not contain any machines")
-	// 	}
+	for k, v := range podMap {
+		Logf("found host %s with pod %s", k, v.Name)
+	}
 
-	// 	var testFuncs []func() error
-	// 	for _, s := range sshInfo {
-	// 		Byf("checking that time synchronization is healthy on %s", s.Hostname)
+	Eventually(func() error {
+		execInfo, err := getClusterSSHInfo(ctx, input.BootstrapClusterProxy, namespace, clusterName)
+		if err != nil {
+			return err
+		}
 
-	// 		execToStringFn := func(expected, command string, args ...string) func() error {
-	// 			// don't assert in this test func, just return errors
-	// 			return func() error {
-	// 				f := &strings.Builder{}
-	// 				if err := execOnHost(s.Endpoint, s.Hostname, s.Port, f, command, args...); err != nil {
-	// 					return err
-	// 				}
-	// 				if !strings.Contains(f.String(), expected) {
-	// 					return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
-	// 				}
-	// 				return nil
-	// 			}
-	// 		}
+		if len(execInfo) <= 0 {
+			return errors.New("execInfo did not contain any machines")
+		}
 
-	// 		testFuncs = append(testFuncs,
-	// 			execToStringFn(
-	// 				"✓ chronyd is active",
-	// 				"systemctl", "is-active", "chronyd", "&&",
-	// 				"echo", "✓ chronyd is active",
-	// 			),
-	// 			execToStringFn(
-	// 				"Reference ID",
-	// 				"chronyc", "tracking",
-	// 			),
-	// 		)
-	// 	}
+		// 	var testFuncs []func() error
+		for _, s := range sshInfo {
+			Byf("checking that time synchronization is healthy on %s", s.Hostname)
 
-	// 	return kinderrors.AggregateConcurrent(testFuncs)
-	// }, thirty, thirty).Should(Succeed())
+			pod, exists := podMap[s.Hostname]
+			if !exists {
+				Logf("failed to find pod matching host %s", s.Hostname)
+				return err
+			}
+
+			cmd := []string{"nsenter", "-t", "1", "-a", "--", "bash", "-c", "systemctl is-active chronyd && echo chronyd is active"}
+			// command := []string{"systemctl", "is-active", "chronyd", "&&", "echo", "✓ chronyd is active"}
+			stdout, stderr, err := e2e_pod.ExecWithOutput(clientset, config, pod, cmd)
+			if err != nil {
+				Logf("failed to nsenter host %s, error: '%s'", s.Hostname)
+				return err
+			}
+
+			output := stdout.String()
+			if !strings.Contains(output.String(), "chronyd is active") {
+				return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
+			}
+			// 		execToStringFn := func(expected, command string, args ...string) func() error {
+			// 			// don't assert in this test func, just return errors
+			// 			return func() error {
+			// 				f := &strings.Builder{}
+			// 				if err := execOnHost(s.Endpoint, s.Hostname, s.Port, f, command, args...); err != nil {
+			// 					return err
+			// 				}
+			// 				if !strings.Contains(f.String(), expected) {
+			// 					return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
+			// 				}
+			// 				return nil
+			// 			}
+			// 		}
+
+			// 		testFuncs = append(testFuncs,
+			// 			execToStringFn(
+			// 				"✓ chronyd is active",
+			// 				"systemctl", "is-active", "chronyd", "&&",
+			// 				"echo", "✓ chronyd is active",
+			// 			),
+			// 			execToStringFn(
+			// 				"Reference ID",
+			// 				"chronyc", "tracking",
+			// 			),
+			// 		)
+		}
+
+		return kinderrors.AggregateConcurrent(testFuncs)
+	}, thirty, thirty).Should(Succeed())
 }
