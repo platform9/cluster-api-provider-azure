@@ -186,9 +186,8 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 				return err
 			}
 
-			output := stdout.String()
-			if !strings.Contains(output.String(), "chronyd is active") {
-				return fmt.Errorf("expected \"%s\" in command output:\n%s", "chronyd is active", f.String())
+			if !strings.Contains(stdout.String(), "chronyd is active") {
+				return fmt.Errorf("expected \"%s\" in command output:\n%s", "chronyd is active", stdout.String())
 			}
 			// 		execToStringFn := func(expected, command string, args ...string) func() error {
 			// 			// don't assert in this test func, just return errors
