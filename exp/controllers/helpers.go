@@ -198,9 +198,14 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c 
 // Cluster, collect the MachinePools belonging to the cluster, then finally projecting the infrastructure reference
 // to the AzureManagedMachinePools.
 func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
-	gvk, err := apiutil.GVKForObject(new(clusterv1exp.MachinePoolList), scheme)
+	mpGvk, err := apiutil.GVKForObject(new(clusterv1exp.MachinePoolList), scheme)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find GVK for MachinePool")
+	}
+
+	ammpGvk, err := apiutil.GVKForObject(new(infrav1exp.AzureManagedMachinePool), scheme)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find GVK for AzureManagedMachinePool")
 	}
 
 	return func(o client.Object) []ctrl.Request {
@@ -227,20 +232,20 @@ func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Contex
 			return nil
 		}
 
-		machineList := &clusterv1exp.MachinePoolList{}
-		machineList.SetGroupVersionKind(gvk)
+		machinePoolList := &clusterv1exp.MachinePoolList{}
+		machinePoolList.SetGroupVersionKind(mpGvk)
 		// list all of the requested objects within the cluster namespace with the cluster name label
-		if err := c.List(ctx, machineList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
+		if err := c.List(ctx, machinePoolList, client.InNamespace(azControlPlane.Namespace), client.MatchingLabels{clusterv1.ClusterLabelName: clusterName}); err != nil {
 			log.Error(err, "failed to list MachinePools")
 			return nil
 		}
 
-		mapFunc := MachinePoolToInfrastructureMapFunc(gvk, log)
+		mapFunc := MachinePoolToInfrastructureMapFunc(ammpGvk, log)
 		var results []ctrl.Request
-		for _, machine := range machineList.Items {
+		for _, machine := range machinePoolList.Items {
 			m := machine
-			azureMachines := mapFunc(&m)
-			results = append(results, azureMachines...)
+			ammp := mapFunc(&m)
+			results = append(results, ammp...)
 		}
 
 		return results
