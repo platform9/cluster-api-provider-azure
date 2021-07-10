@@ -27,8 +27,10 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 	e2e_pod "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pod"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -152,7 +154,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		var nodes corev1.PodList
 		if err := kubeclient.List(ctx, &nodes); err != nil {
 			Logf("failed to list nodes for daemonset timesync check: %v", err)
-			return
+			return err
 		}
 
 		if len(nodes.Items) < 1 {
