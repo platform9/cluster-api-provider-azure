@@ -174,8 +174,12 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		allReadyAndAvailable := desired == ready && desired == available
 		generationOk := ds.ObjectMeta.Generation == ds.Status.ObservedGeneration
 
-		Logf("want %d instances, found %d ready and %d available. generation: %s, observedGeneration: %s", desired, ready, available, ds.ObjectMeta.Generation, ds.Status.ObservedGeneration)
-		return allReadyAndAvailable && generationOk
+		msg := fmt.Sprintf("want %d instances, found %d ready and %d available. generation: %s, observedGeneration: %s", desired, ready, available, ds.ObjectMeta.Generation, ds.Status.ObservedGeneration)
+		Logf(msg)
+		if allReadyAndAvailable && generationOk {
+			return nil
+		}
+		return fmt.Errorf(msg)
 	}).Should(Succeed())
 
 	var podList corev1.PodList
