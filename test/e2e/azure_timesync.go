@@ -162,7 +162,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 			Logf(msg)
 			return fmt.Errorf(msg)
 		}
-		desired := len(nodes.Items)
+		desired := ints32(len(nodes.Items))
 
 		var ds appsv1.DaemonSet
 		if err := kubeclient.Get(ctx, types.NamespacedName{"default", "nsenter"}, &ds); err != nil {
