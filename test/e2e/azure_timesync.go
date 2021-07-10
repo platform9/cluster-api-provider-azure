@@ -148,6 +148,34 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		"app": "nsenter",
 	})
 
+	Eventually(func() error {
+		var nodes corev1.PodList
+		if err := kubeclient.List(ctx, &nodes); err != nil {
+			Logf("failed to list nodes for daemonset timesync check: %v", err)
+			return
+		}
+
+		if len(nodes.Items) < 1 {
+			msg := "expected to find >= 1 node for timesync check"
+			Logf(msg)
+			return fmt.Errorf(msg)
+		}
+		desired := len(nodes.Items)
+
+		var ds appsv1.DaemonSet
+		if err := kubeclient.Get(ctx, types.NamespacedName{"default", "nsenter"}, &ds); err != nil {
+			Logf("failed to get nsenter ds: %s", err)
+			return err
+		}
+		ready := ds.Status.NumberReady
+		available := ds.Status.NumberAvailable
+		allReadyAndAvailable := desired == ready && desired == available
+		generationOk := ds.Metadata.Generation == ds.Status.ObservedGeneration
+
+		Logf("want %d instances, found %d ready and %d available. generation: %s, observedGeneration: %s", desired, ready, available, ds.Metadata.Generation, ds.Status.ObservedGeneration)
+		return allReadyAndAvailable && generationOk
+	}).Should(Succeed())
+
 	var podList corev1.PodList
 	if err := kubeclient.List(ctx, &podList, matchingLabels); err != nil {
 		Logf("failed to list pods for daemonset timesync check: %v", err)
