@@ -108,7 +108,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
-		thirty   = 30 * time.Second
+		// thirty   = 30 * time.Second
 	)
 
 	input = inputGetter()
