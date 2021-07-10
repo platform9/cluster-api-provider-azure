@@ -16,9 +16,9 @@ spec:
       hostNetwork: true
       hostPID: true
       containers:
-      - image: ubuntu:18.04
-        name: ubuntu
-        command: ["sleep", "infinity"]
+      - image: alexeldeib/nsenter:latest
+        name: nsenter
+        command: ["/sleep", "infinity"]
         resources:
           requests: {}
           limits: {}

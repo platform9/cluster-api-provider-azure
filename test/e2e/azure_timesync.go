@@ -49,7 +49,8 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
-		thirty   = 30 * time.Second
+		ninety   = 90 * time.Second
+		thirty   = 5 * time.Second
 	)
 
 	input = inputGetter()
@@ -97,7 +98,7 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 		}
 
 		return kinderrors.AggregateConcurrent(testFuncs)
-	}, thirty, thirty).Should(Succeed())
+	}, ninety, thirty).Should(Succeed())
 }
 
 const (
