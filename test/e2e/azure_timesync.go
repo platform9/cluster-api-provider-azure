@@ -21,12 +21,14 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/cluster-api/test/framework"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
 )
@@ -111,22 +113,22 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	input = inputGetter()
 	Expect(input.BootstrapClusterProxy).NotTo(BeNil(), "Invalid argument. input.BootstrapClusterProxy can't be nil when calling %s spec", specName)
 	namespace, clusterName := input.Namespace.Name, input.ClusterName
-	workloadCluster := input.GetWorkloadCluster(ctx, namespace, clusterName)
+	workloadCluster := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, namespace, clusterName)
 	kubeclient := workloadCluster.GetClient()
 
-	var nsenterDs unstructured.unstructured
+	var nsenterDs unstructured.Unstructured
 
 	data, err := ioutil.ReadFile(nsenterWorkloadFile)
 	if err != nil {
-		return err
+		Logf("failed daemonset time synx: %v", err)
 	}
 
 	if err := nsenterDs.Unmarshal(data); err != nil {
-		return err
+		Logf("failed daemonset time synx: %v", err)
 	}
 
 	if err := kubeclient.Create(ctx, &nsenterDs); err != nil {
-		return err
+		Logf("failed daemonset time synx: %v", err)
 	}
 
 	Logf("passed daemonset timesync spec!")
