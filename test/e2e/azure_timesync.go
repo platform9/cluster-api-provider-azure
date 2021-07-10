@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	e2e_pod "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/pod"
 	"sigs.k8s.io/cluster-api/test/framework"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/yaml"
@@ -108,7 +109,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
-		// thirty   = 30 * time.Second
+		thirty   = 30 * time.Second
 	)
 
 	input = inputGetter()
@@ -117,7 +118,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	workloadCluster := input.BootstrapClusterProxy.GetWorkloadCluster(ctx, namespace, clusterName)
 	kubeclient := workloadCluster.GetClient()
 	clientset := workloadCluster.GetClientSet()
-
+	config := workloadCluster.GetRESTConfig()
 	var nsenterDs unstructured.Unstructured
 
 	yamlData, err := ioutil.ReadFile(nsenterWorkloadFile)
@@ -168,7 +169,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		}
 
 		// 	var testFuncs []func() error
-		for _, s := range sshInfo {
+		for _, s := range execInfo {
 			Byf("checking that time synchronization is healthy on %s", s.Hostname)
 
 			pod, exists := podMap[s.Hostname]
@@ -187,7 +188,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 
 			output := stdout.String()
 			if !strings.Contains(output.String(), "chronyd is active") {
-				return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
+				return fmt.Errorf("expected \"%s\" in command output:\n%s", "chronyd is active", f.String())
 			}
 			// 		execToStringFn := func(expected, command string, args ...string) func() error {
 			// 			// don't assert in this test func, just return errors
@@ -216,6 +217,6 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 			// 		)
 		}
 
-		return kinderrors.AggregateConcurrent(testFuncs)
+		return nil
 	}, thirty, thirty).Should(Succeed())
 }
