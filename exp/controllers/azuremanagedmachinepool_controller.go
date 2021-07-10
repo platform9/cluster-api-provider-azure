@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -91,7 +92,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 		// watch for changes in CAPI MachinePool resources
 		Watches(
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
-			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedMachinePool"), ctrl.LoggerFrom(ctx))),
+			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(clusterv1exp.GroupVersion.WithKind("MachinePool"), ctrl.LoggerFrom(ctx))),
 		).
 		Build(r)
 	if err != nil {
@@ -105,6 +106,7 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(clusterToMachinePoolMapper),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
+		predicate.ResourceVersionChangedPredicate{},
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}

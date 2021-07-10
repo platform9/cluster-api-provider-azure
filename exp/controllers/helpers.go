@@ -200,7 +200,7 @@ func AzureManagedClusterToAzureManagedMachinePoolsMapper(ctx context.Context, c 
 func AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx context.Context, c client.Client, scheme *runtime.Scheme, log logr.Logger) (handler.MapFunc, error) {
 	gvk, err := apiutil.GVKForObject(new(clusterv1exp.MachinePoolList), scheme)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find GVK for AzureManagedMachinePool")
+		return nil, errors.Wrap(err, "failed to find GVK for MachinePool")
 	}
 
 	return func(o client.Object) []ctrl.Request {
