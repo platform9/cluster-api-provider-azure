@@ -97,7 +97,7 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 		}
 
 		return kinderrors.AggregateConcurrent(testFuncs)
-	}, ninety, thirty).Should(Succeed())
+	}, thirty, thirty).Should(Succeed())
 }
 
 const (
