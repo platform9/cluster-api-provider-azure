@@ -182,8 +182,6 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 		return reconcile.Result{}, errors.Wrap(err, "failed to fetch default pool reference")
 	}
 
-	log = log.WithValues("azureManagedMachinePool", defaultPoolKey.Name)
-
 	// Fetch the owning MachinePool.
 	ownerPool, err := infracontroller.GetOwnerMachinePool(ctx, r.Client, defaultPool.ObjectMeta)
 	if err != nil {
