@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/cluster-api/test/framework"
 	kinderrors "sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/yaml"
 )
 
 // AzureTimeSyncSpecInput is the input for AzureTimeSyncSpec.
@@ -128,7 +129,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		Logf("failed to convert nsenter yaml to json: %v", err)
 	}
 
-	if err := nsenterDs.UnmarshalJSON(data); err != nil {
+	if err := nsenterDs.UnmarshalJSON(jsonData); err != nil {
 		Logf("failed daemonset time synx: %v", err)
 	}
 
