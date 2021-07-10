@@ -49,8 +49,7 @@ func AzureTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpec
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
-		ninety   = 90 * time.Second
-		thirty   = 5 * time.Second
+		thirty   = 30 * time.Second
 	)
 
 	input = inputGetter()
@@ -111,7 +110,8 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
-		thirty   = 30 * time.Second
+		ninety   = 90 * time.Second
+		five     = 5 * time.Second
 	)
 
 	input = inputGetter()
@@ -227,5 +227,5 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		}
 
 		return nil
-	}, thirty, thirty).Should(Succeed())
+	}, ninety, five).Should(Succeed())
 }
