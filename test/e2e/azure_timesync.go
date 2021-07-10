@@ -121,7 +121,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 
 	yamlData, err := ioutil.ReadFile(nsenterWorkloadFile)
 	if err != nil {
-		Logf("failed daemonset time synx: %v", err)
+		Logf("failed daemonset time sync: %v", err)
 	}
 
 	jsonData, err := yaml.YAMLToJSON(yamlData)
@@ -132,6 +132,8 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	if err := nsenterDs.UnmarshalJSON(jsonData); err != nil {
 		Logf("failed daemonset time synx: %v", err)
 	}
+
+	nsenterDs.SetNamespace(namespace)
 
 	if err := kubeclient.Create(ctx, &nsenterDs); err != nil {
 		Logf("failed daemonset time synx: %v", err)
