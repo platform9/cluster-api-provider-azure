@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -80,11 +81,11 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 	log := r.Log.WithValues("controller", "AzureManagedMachinePool")
 	azManagedMachinePool := &infrav1exp.AzureManagedMachinePool{}
 
-	// // create mapper to transform incoming AzureManagedControlPlanes into AzureManagedMachinePool requests
-	// controlPlaneToMachinePoolMapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to create mapper for AzureManagedControlPlane to AzureManagedMachinePools")
-	// }
+	// create mapper to transform incoming AzureManagedControlPlanes into AzureManagedMachinePool requests
+	controlPlaneToMachinePoolMapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(ctx, r.Client, mgr.GetScheme(), log)
+	if err != nil {
+		return errors.Wrap(err, "failed to create mapper for AzureManagedControlPlane to AzureManagedMachinePools")
+	}
 
 	clusterToMachinePoolMapper, err := util.ClusterToObjectsMapper(r.Client, &infrav1exp.AzureManagedMachinePoolList{}, mgr.GetScheme())
 	if err != nil {
@@ -100,12 +101,12 @@ func (r *AzureManagedMachinePoolReconciler) SetupWithManager(ctx context.Context
 			&source.Kind{Type: &clusterv1exp.MachinePool{}},
 			handler.EnqueueRequestsFromMapFunc(MachinePoolToInfrastructureMapFunc(clusterv1exp.GroupVersion.WithKind("MachinePool"), ctrl.LoggerFrom(ctx))),
 		).
-		// // watch for changes in AzureManagedControlPlanes
-		// Watches(
-		// 	&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
-		// 	handler.EnqueueRequestsFromMapFunc(controlPlaneToMachinePoolMapper),
-		// 	builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		// ).
+		// watch for changes in AzureManagedControlPlanes
+		Watches(
+			&source.Kind{Type: &infrav1exp.AzureManagedControlPlane{}},
+			handler.EnqueueRequestsFromMapFunc(controlPlaneToMachinePoolMapper),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Build(r)
 	if err != nil {
 		return errors.Wrap(err, "error creating controller")

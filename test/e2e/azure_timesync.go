@@ -142,8 +142,12 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		return
 	}
 
+	matchingLabels := client.MatchingLabels(map[string]string{
+		"app": "nsenter",
+	})
+
 	var podList corev1.PodList
-	if err := kubeclient.List(ctx, &podList); err != nil {
+	if err := kubeclient.List(ctx, &podList, matchingLabels); err != nil {
 		Logf("failed to list pods for daemonset timesync check: %v", err)
 		return
 	}
@@ -180,11 +184,15 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 
 			cmd := []string{"nsenter", "-t", "1", "-a", "--", "bash", "-c", "systemctl is-active chronyd && echo chronyd is active"}
 			// command := []string{"systemctl", "is-active", "chronyd", "&&", "echo", "✓ chronyd is active"}
-			stdout, _, err := e2e_pod.ExecWithOutput(clientset, config, pod, cmd)
+			stdout, stderr, err := e2e_pod.ExecWithOutput(clientset, config, pod, cmd)
 			if err != nil {
-				Logf("failed to nsenter host %s, error: '%s'", s.Hostname)
+				Logf("failed to nsenter host %s, error: '%s'", s.Hostname, err)
+				Logf("stderr: %s", stderr.String())
 				return err
 			}
+
+			Logf("stdout: '%s'", stdout.String())
+			Logf("stderr: %s", stderr.String())
 
 			if !strings.Contains(stdout.String(), "chronyd is active") {
 				return fmt.Errorf("expected \"%s\" in command output:\n%s", "chronyd is active", stdout.String())
