@@ -160,6 +160,7 @@ func TestAzureManagedControlPlaneToAzureManagedMachinePoolsMapper(t *testing.T) 
 	log.EXPECT().V(4).Return(log)
 	log.EXPECT().V(4).Return(log)
 	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
+	log.EXPECT().Info("gk does not match", "gk", gomock.Any(), "infraGK", gomock.Any())
 	mapper, err := AzureManagedControlPlaneToAzureManagedMachinePoolsMapper(context.Background(), fakeClient, scheme, log)
 	g.Expect(err).NotTo(HaveOccurred())
 
