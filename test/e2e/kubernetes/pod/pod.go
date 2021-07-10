@@ -20,7 +20,6 @@ package pod
 
 import (
 	"bytes"
-	"io"
 	"os"
 
 	v1 "k8s.io/api/core/v1"
@@ -59,7 +58,7 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod
 	return nil
 }
 
-func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string) (io.ReadWriter, io.ReadWriter, error) {
+func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string) (*bytes.Buffer, *bytes.Buffer, error) {
 	req := clientset.CoreV1().RESTClient().Post().Resource("pods").Name(pod.GetName()).
 		Namespace(pod.GetNamespace()).SubResource("exec")
 	option := &v1.PodExecOptions{
