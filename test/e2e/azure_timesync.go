@@ -149,7 +149,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	}
 
 	Logf("mapping pods to hostnames")
-	var podMap map[string]corev1.Pod
+	podMap := map[string]corev1.Pod{}
 	for _, pod := range podList.Items {
 		podMap[pod.Spec.NodeName] = pod
 	}
