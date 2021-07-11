@@ -218,7 +218,9 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 				return err
 			}
 
-			cmd := []string{"/nsenter", "-t", "1", "-a", "--", "bash", "-c", "echo hello && systemctl is-active chronyd && echo chronyd is active"}
+			// enter all except time or user namespaces, which causes errors inside the minimal test container
+			// TODO(alexeldeib): possibly mount /proc, or fix the base container so we can just invoke '/nsenter -t 1 -a'
+			cmd := []string{"/nsenter", "-t", "1", "-m", "-u", "-i", "-n", "-p", "-C", "-r", "-w", "--", "bash", "-c", "echo hello && systemctl is-active chronyd && echo chronyd is active"}
 			// command := []string{"systemctl", "is-active", "chronyd", "&&", "echo", "✓ chronyd is active"}
 			stdout, stderr, err := e2e_pod.ExecWithOutput(clientset, config, pod, cmd)
 			if err != nil {
