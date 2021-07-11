@@ -79,6 +79,7 @@ func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, 
 	stdout, stderr := bytes.NewBuffer(nil), bytes.NewBuffer(nil)
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdout: stdout,
+		Stderr: stderr,
 	})
 	if err != nil {
 		return stdout, stderr, err
