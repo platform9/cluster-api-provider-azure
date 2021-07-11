@@ -82,7 +82,7 @@ func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, 
 		Stderr: stderr,
 	})
 	if err != nil {
-		return nil, nil, err
+		return stdout, stderr, err
 	}
 
 	return stdout, stderr, nil
