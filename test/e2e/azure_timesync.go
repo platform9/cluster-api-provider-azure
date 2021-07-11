@@ -222,7 +222,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 			// command := []string{"systemctl", "is-active", "chronyd", "&&", "echo", "✓ chronyd is active"}
 			stdout, stderr, err := e2e_pod.ExecWithOutput(clientset, config, pod, cmd)
 			if err != nil {
-				Logf("failed to nsenter host %s, error: '%s'", s.Hostname, err)
+				Logf("failed to nsenter host %s, error: '%v'", s.Hostname, err)
 				Logf("stdout: '%s'", stdout.String())
 				Logf("stderr: %s", stderr.String())
 				return err
