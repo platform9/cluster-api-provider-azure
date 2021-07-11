@@ -58,7 +58,7 @@ func Exec(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod
 	return nil
 }
 
-func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string) (*bytes.Buffer, error) {
+func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, pod v1.Pod, command []string) (*bytes.Buffer, *bytes.Buffer, error) {
 	req := clientset.CoreV1().RESTClient().Post().Resource("pods").Name(pod.GetName()).
 		Namespace(pod.GetNamespace()).SubResource("exec")
 	option := &v1.PodExecOptions{
@@ -74,15 +74,15 @@ func ExecWithOutput(clientset *kubernetes.Clientset, config *restclient.Config, 
 	)
 	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	stdout := bytes.NewBuffer(nil)
+	stdout, stderr := bytes.NewBuffer(nil), bytes.NewBuffer(nil)
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdout: stdout,
 	})
 	if err != nil {
-		return stdout, err
+		return stdout, stderr, err
 	}
 
-	return stdout, nil
+	return stdout, stderr, nil
 }
