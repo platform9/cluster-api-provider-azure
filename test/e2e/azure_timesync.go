@@ -151,7 +151,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	})
 
 	Eventually(func() error {
-		var nodes corev1.PodList
+		var nodes corev1.NodeList
 		if err := kubeclient.List(ctx, &nodes); err != nil {
 			Logf("failed to list nodes for daemonset timesync check: %v", err)
 			return err
