@@ -515,7 +515,7 @@ var _ = Describe("Workload cluster creation", func() {
 				},
 			}, result)
 
-			Context("Validating time synchronization", func() {
+			Context("Validating AKS time synchronization", func() {
 				AzureDaemonsetTimeSyncSpec(ctx, func() AzureTimeSyncSpecInput {
 					return AzureTimeSyncSpecInput{
 						BootstrapClusterProxy: bootstrapClusterProxy,
@@ -524,16 +524,6 @@ var _ = Describe("Workload cluster creation", func() {
 					}
 				})
 			})
-
-			// Context("Validating AKS Resources", func() {
-			// 	AKSResourcesValidationSpec(ctx, func() AKSResourcesValidationSpecInput {
-			// 		return AKSResourcesValidationSpecInput{
-			// 			BootstrapClusterProxy: bootstrapClusterProxy,
-			// 			Namespace:             namespace,
-			// 			ClusterName:           clusterName,
-			// 		}
-			// 	})
-			// })
 		})
 	})
 

@@ -239,39 +239,3 @@ func byClusterOptions(name, namespace string) []client.ListOption {
 		},
 	}
 }
-
-// // AKSResourcesValidationSpecInput is the input for AKSResourcesValidationSpec
-// type AKSResourcesValidationSpecInput struct {
-// 	BootstrapClusterProxy framework.ClusterProxy
-// 	Namespace             *corev1.Namespace
-// 	ClusterName           string
-// }
-
-// // AKSResourcesValidationSpec implements a test that verifies the resources created by an AKS cluster.
-// func AKSResourcesValidationSpec(ctx context.Context, inputGetter func() AKSResourcesValidationSpecInput) {
-// 	var (
-// 		specName = "aks-resources-validation"
-// 		input    AKSResourcesValidationSpecInput
-// 	)
-
-// 	input = inputGetter()
-// 	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
-
-// 	By("creating Azure clients with the workload cluster's subscription, and querying for vmss")
-// 	var controlPlane = &infraexpv1.AzureManagedControlPlane{}
-// 	Expect(input.BootstrapClusterProxy.GetClient().Get(ctx,
-// 		types.NamespacedName{input.Namespace.Name, input.ClusterName}, controlPlane)).To(Succeed())
-
-// 	settings, err := auth.GetSettingsFromEnvironment()
-// 	Expect(err).NotTo(HaveOccurred())
-// 	subscriptionID := settings.GetSubscriptionID()
-// 	authorizer, err := settings.GetAuthorizer()
-// 	Expect(err).NotTo(HaveOccurred())
-// 	vmssClient := compute.NewVirtualMachineScaleSetsClient(subscriptionID)
-// 	vmssClient.Authorizer = authorizer
-
-// 	rgName := controlPlane.Spec.NodeResourceGroupName
-// 	scalesets, err := vmssClient.List(ctx, rgName)
-// 	Expect(err).NotTo(HaveOccurred())
-// 	Expect(len(scalesets.Values())).To(BeNumerically(">", 0))
-// }

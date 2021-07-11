@@ -107,12 +107,12 @@ const (
 )
 
 // AzureDaemonsetTimeSyncSpec implements a test that verifies time synchronization is healthy for
-// the nodes in a cluster.
+// the nodes in a cluster. It uses a privileged daemonset and nsenter instead of SSH.
 func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTimeSyncSpecInput) {
 	var (
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
-		ninety   = 90 * time.Second
+		thirty   = 30 * time.Second
 		five     = 5 * time.Second
 	)
 
@@ -128,15 +128,18 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	yamlData, err := ioutil.ReadFile(nsenterWorkloadFile)
 	if err != nil {
 		Logf("failed daemonset time sync: %v", err)
+		return
 	}
 
 	jsonData, err := yaml.YAMLToJSON(yamlData)
 	if err != nil {
 		Logf("failed to convert nsenter yaml to json: %v", err)
+		return
 	}
 
 	if err := nsenterDs.UnmarshalJSON(jsonData); err != nil {
-		Logf("failed daemonset time synx: %v", err)
+		Logf("failed to unmarshal nsenter daemonset: %v", err)
+		return
 	}
 
 	nsenterDs.SetNamespace("default")
@@ -188,7 +191,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		return
 	}
 
-	Logf("mapping pods to hostnames")
+	Logf("mapping nsenter pods to hostnames for host-by-host execution")
 	podMap := map[string]corev1.Pod{}
 	for _, pod := range podList.Items {
 		podMap[pod.Spec.NodeName] = pod
@@ -208,61 +211,49 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 			return errors.New("execInfo did not contain any machines")
 		}
 
-		// 	var testFuncs []func() error
+		var testFuncs []func() error
+		nsenterCmd := []string{"/nsenter", "-t", "1", "-m", "-u", "-i", "-n", "-p", "-C", "-r", "-w", "--", "bash", "-c"}
 		for _, s := range execInfo {
 			Byf("checking that time synchronization is healthy on %s", s.Hostname)
 
-			pod, exists := podMap[s.Hostname]
-			if !exists {
-				Logf("failed to find pod matching host %s", s.Hostname)
-				return err
+			// enter all except time or user namespaces, which are only supported on very new kernels and aren't necessary.
+			execToStringFn := func(expected, command string) func() error {
+				// don't assert in this test func, just return errors
+				return func() error {
+					pod, exists := podMap[s.Hostname]
+					if !exists {
+						Logf("failed to find pod matching host %s", s.Hostname)
+						return err
+					}
+
+					fullCommand := make([]string, 0, len(nsenterCmd)+1)
+					fullCommand = append(fullCommand, nsenterCmd...)
+					fullCommand = append(fullCommand, command)
+					stdout, err := e2e_pod.ExecWithOutput(clientset, config, pod, fullCommand)
+					if err != nil {
+						return fmt.Errorf("failed to nsenter host %s, error: '%s', stdout:  '%s'", s.Hostname, err, stdout.String())
+					}
+
+					if !strings.Contains(stdout.String(), expected) {
+						return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, stdout.String())
+					}
+
+					return nil
+				}
 			}
 
-			// enter all except time or user namespaces, which causes errors inside the minimal test container
-			// TODO(alexeldeib): possibly mount /proc, or fix the base container so we can just invoke '/nsenter -t 1 -a'
-			cmd := []string{"/nsenter", "-t", "1", "-m", "-u", "-i", "-n", "-p", "-C", "-r", "-w", "--", "bash", "-c", "echo hello && systemctl is-active chronyd && echo chronyd is active"}
-			// command := []string{"systemctl", "is-active", "chronyd", "&&", "echo", "✓ chronyd is active"}
-			stdout, stderr, err := e2e_pod.ExecWithOutput(clientset, config, pod, cmd)
-			if err != nil {
-				Logf("failed to nsenter host %s, error: '%s', stdout:  '%s'", s.Hostname, err, stdout.String())
-				Logf("stdout: '%s'", stdout.String())
-				Logf("stderr: '%s'", stderr.String())
-
-				return err
-			}
-
-			Logf("stdout: '%s'", stdout.String())
-
-			if !strings.Contains(stdout.String(), "chronyd is active") {
-				return fmt.Errorf("expected \"%s\" in command output:\n%s", "chronyd is active", stdout.String())
-			}
-			// 		execToStringFn := func(expected, command string, args ...string) func() error {
-			// 			// don't assert in this test func, just return errors
-			// 			return func() error {
-			// 				f := &strings.Builder{}
-			// 				if err := execOnHost(s.Endpoint, s.Hostname, s.Port, f, command, args...); err != nil {
-			// 					return err
-			// 				}
-			// 				if !strings.Contains(f.String(), expected) {
-			// 					return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, f.String())
-			// 				}
-			// 				return nil
-			// 			}
-			// 		}
-
-			// 		testFuncs = append(testFuncs,
-			// 			execToStringFn(
-			// 				"✓ chronyd is active",
-			// 				"systemctl", "is-active", "chronyd", "&&",
-			// 				"echo", "✓ chronyd is active",
-			// 			),
-			// 			execToStringFn(
-			// 				"Reference ID",
-			// 				"chronyc", "tracking",
-			// 			),
-			// 		)
+			testFuncs = append(testFuncs,
+				execToStringFn(
+					"✓ chronyd is active",
+					"systemctl is-active chronyd && echo chronyd is active",
+				),
+				execToStringFn(
+					"Reference ID",
+					"chronyc tracking",
+				),
+			)
 		}
 
 		return nil
-	}, ninety, five).Should(Succeed())
+	}, thirty, five).Should(Succeed())
 }
