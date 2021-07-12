@@ -182,8 +182,6 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 		return reconcile.Result{}, nil
 	}
 
-	log = log.WithValues("machinePool", ownerPool.Name)
-
 	// check if the control plane's namespace is allowed for this identity and update owner references for the identity.
 	if azureControlPlane.Spec.IdentityRef != nil {
 		identity, err := infracontroller.GetClusterIdentityFromRef(ctx, r.Client, azureControlPlane.Namespace, azureControlPlane.Spec.IdentityRef)
