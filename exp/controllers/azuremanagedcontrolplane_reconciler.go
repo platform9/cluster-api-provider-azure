@@ -254,10 +254,15 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 		return fmt.Errorf("expected containerservice ManagedCluster object")
 	}
 
+	fqdn := *managedCluster.ManagedClusterProperties.Fqdn
+	if fqdn == "" {
+		return fmt.Errorf("managed cluster fqdn not populated yet")
+	}
+
 	old := scope.ControlPlane.DeepCopy()
 
 	scope.ControlPlane.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
-		Host: *managedCluster.ManagedClusterProperties.Fqdn,
+		Host: fqdn,
 		Port: 443,
 	}
 
