@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/publicips"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
@@ -58,14 +57,10 @@ func New(scope BastionScope) *Service {
 
 // Reconcile gets/creates/updates a bastion host.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, span, err := trace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"bastionhosts.Service.Reconcile",
 	)
-	if err != nil {
-		return err
-	}
 	defer span.End()
 
 	azureBastionSpec := s.Scope.BastionSpec().AzureBastion

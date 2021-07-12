@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/converters"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/resourceskus"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -58,14 +57,10 @@ func New(scope AvailabilitySetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile creates or updates availability sets.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, span, err := trace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"availabilitysets.Service.Reconcile",
 	)
-	if err != nil {
-		return err
-	}
 	defer span.End()
 
 	availabilitySetName, ok := s.Scope.AvailabilitySet()

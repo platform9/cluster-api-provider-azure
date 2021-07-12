@@ -38,7 +38,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	expv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
+
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -65,9 +65,8 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
-	ctx, _, span, startSpanErr := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.AzureJSONMachinePoolReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
@@ -75,9 +74,6 @@ func (r *AzureJSONMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl
 			attribute.String("kind", "AzureMachinePool"),
 		),
 	)
-	if startSpanErr != nil {
-		return ctrl.Result{}, startSpanErr
-	}
 	defer span.End()
 
 	// Fetch the AzureMachine instance

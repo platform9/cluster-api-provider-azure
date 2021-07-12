@@ -27,7 +27,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -54,14 +53,10 @@ func New(scope SubnetScope) *Service {
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, span, err := trace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"subnets.Service.Reconcile",
 	)
-	if err != nil {
-		return err
-	}
 	defer span.End()
 
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {

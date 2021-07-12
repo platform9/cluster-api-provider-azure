@@ -27,7 +27,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/generators"
 	"sigs.k8s.io/cluster-api-provider-azure/util/slice"
 
@@ -75,14 +74,10 @@ func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) (retErr error) {
-	ctx, _, span, startSpanErr := trace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"scalesets.Service.Reconcile",
 	)
-	if startSpanErr != nil {
-		return startSpanErr
-	}
 	defer span.End()
 
 	if err := s.validateSpec(ctx); err != nil {

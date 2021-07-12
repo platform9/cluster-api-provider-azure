@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -54,14 +53,10 @@ func New(scope TagScope) *Service {
 
 // Reconcile ensures tags are correct.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, _, span, err := trace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"tags.Service.Reconcile",
 	)
-	if err != nil {
-		return err
-	}
 	defer span.End()
 
 	for _, tagsSpec := range s.Scope.TagsSpecs() {

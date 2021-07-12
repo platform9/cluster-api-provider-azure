@@ -33,8 +33,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
-	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/system"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
@@ -104,9 +102,8 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "identityOwner", req.Name)
 
-	ctx, _, span, startSpanErr := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.AzureIdentityReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
@@ -114,9 +111,6 @@ func (r *AzureIdentityReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			attribute.String("kind", "AzureCluster"),
 		),
 	)
-	if startSpanErr != nil {
-		return ctrl.Result{}, startSpanErr
-	}
 	defer span.End()
 
 	// identityOwner is the resource that created the identity. This could be either an AzureCluster or AzureManagedControlPlane (if AKS is enabled).

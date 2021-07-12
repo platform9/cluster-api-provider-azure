@@ -28,7 +28,6 @@ import (
 	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/cluster-api-provider-azure/azure"
-	"sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -115,14 +114,10 @@ func (s *Service) GetCredentials(ctx context.Context, group, name string) ([]byt
 
 // Reconcile idempotently creates or updates a managed cluster, if possible.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	ctx, _, span, err := trace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"managedclusters.Service.Reconcile",
 	)
-	if err != nil {
-		return err
-	}
 	defer span.End()
 
 	managedClusterSpec, ok := spec.(*Spec)

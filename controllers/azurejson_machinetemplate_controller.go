@@ -38,7 +38,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
+
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -66,9 +66,8 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureMachineTemplate", req.Name)
 
-	ctx, _, span, startSpanErr := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.AzureJSONTemplateReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
@@ -76,9 +75,6 @@ func (r *AzureJSONTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			attribute.String("kind", "AzureMachineTemplate"),
 		),
 	)
-	if startSpanErr != nil {
-		return ctrl.Result{}, startSpanErr
-	}
 	defer span.End()
 
 	// Fetch the AzureMachineTemplate instance

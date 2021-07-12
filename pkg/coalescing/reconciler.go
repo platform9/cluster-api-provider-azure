@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/cache/ttllru"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -91,18 +90,14 @@ func NewReconciler(upstream reconcile.Reconciler, cache ReconcileCacher, log log
 
 // Reconcile sends a request to the upstream reconciler if the request is outside of the debounce window.
 func (rc *reconciler) Reconcile(ctx context.Context, r reconcile.Request) (reconcile.Result, error) {
-	ctx, _, span, err := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.reconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", r.Namespace),
 			attribute.String("name", r.Name),
 		),
 	)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 	defer span.End()
 
 	log := rc.log.WithValues("request", r.String())

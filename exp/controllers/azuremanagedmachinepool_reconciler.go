@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/agentpools"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -89,14 +88,10 @@ func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) *a
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
-	ctx, _, span, err := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.azureManagedMachinePoolService.Reconcile",
 	)
-	if err != nil {
-		return err
-	}
 	defer span.End()
 
 	scope.Logger.Info("reconciling machine pool")

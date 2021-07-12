@@ -35,7 +35,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/securitygroups"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/subnets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualnetworks"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -82,14 +81,10 @@ var _ azure.Reconciler = (*azureClusterService)(nil)
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureClusterService) Reconcile(ctx context.Context) error {
-	ctx, _, span, err := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.azureClusterService.Reconcile",
 	)
-	if err != nil {
-		return err
-	}
 	defer span.End()
 
 	if err := s.setFailureDomainsForLocation(ctx); err != nil {

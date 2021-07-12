@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,7 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
+
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -159,19 +157,10 @@ func (ampr *AzureMachinePoolReconciler) SetupWithManager(ctx context.Context, mg
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, _, span, err := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.AzureMachinePoolReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureMachinePool"),
-		),
 	)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 	defer span.End()
 	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampr.ReconcileTimeout))
 	defer cancel()
@@ -179,7 +168,7 @@ func (ampr *AzureMachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.
 	logger := ampr.Log.WithValues("namespace", req.Namespace, "azureMachinePool", req.Name)
 
 	azMachinePool := &infrav1exp.AzureMachinePool{}
-	err = ampr.Get(ctx, req.NamespacedName, azMachinePool)
+	err := ampr.Get(ctx, req.NamespacedName, azMachinePool)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil

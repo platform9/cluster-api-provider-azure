@@ -44,7 +44,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -113,9 +112,8 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
-	ctx, _, span, startSpanErr := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.AzureClusterReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
@@ -123,9 +121,6 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			attribute.String("kind", "AzureCluster"),
 		),
 	)
-	if startSpanErr != nil {
-		return ctrl.Result{}, startSpanErr
-	}
 	defer span.End()
 
 	// Fetch the AzureCluster instance

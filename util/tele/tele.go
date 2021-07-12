@@ -17,11 +17,62 @@ limitations under the License.
 package tele
 
 import (
+	"context"
+
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// Tracer returns the default opentelemetry tracer.
+type tracer struct {
+	trace.Tracer
+}
+
+// Start is the trace.Tracer implementation
+func (t tracer) Start(
+	ctx context.Context,
+	op string,
+	opts ...trace.SpanOption,
+) (context.Context, trace.Span) {
+	currentCorrIDIface := ctx.Value(corrIDKeyVal)
+	corrID := ""
+	if currentCorrIDIface == nil {
+		corrID = newCorrID()
+	} else {
+		cid, ok := currentCorrIDIface.(string)
+		if ok {
+			corrID = cid
+		} else {
+			corrID = newCorrID()
+		}
+	}
+
+	ctx = context.WithValue(ctx, corrIDKeyVal, corrID)
+	return t.Tracer.Start(ctx, op, opts...)
+}
+
+// newCorrID returns a new correlation ID to be put into a context.Context.
+// if there was a problem creating a correlation ID, an empty string will
+// be returned
+func newCorrID() string {
+	uid, err := uuid.NewRandom()
+	if err != nil {
+		return ""
+	}
+	return uid.String()
+}
+
+// Tracer returns an OpenTelemetry Tracer implementation to be used
+// to create spans. Use this implementation instead of the "raw" one that
+// you could otherwise get from calling `otel.Tracer("whatever")`.
+//
+// Example usage:
+//
+//	ctx, span := tele.Tracer().Start(ctx, "myFunction")
+//	defer span.End()
+//	// use the span and context here
 func Tracer() trace.Tracer {
-	return otel.Tracer("capz")
+	return tracer{
+		Tracer: otel.Tracer("capz"),
+	}
 }

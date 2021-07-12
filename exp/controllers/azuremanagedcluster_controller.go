@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -40,7 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -101,24 +98,12 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedCluster", req.Name)
 
-	ctx, _, span, err := pkgtrace.StartSpan(
-		ctx,
-		tele.Tracer(),
-		"controllers.AzureManagedClusterReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureManagedCluster"),
-		),
-	)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedClusterReconciler.Reconcile")
 	defer span.End()
 
 	// Fetch the AzureManagedCluster instance
 	aksCluster := &infrav1exp.AzureManagedCluster{}
-	err = r.Get(ctx, req.NamespacedName, aksCluster)
+	err := r.Get(ctx, req.NamespacedName, aksCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil

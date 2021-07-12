@@ -22,8 +22,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -43,7 +41,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/scope"
 	infracontroller "sigs.k8s.io/cluster-api-provider-azure/controllers"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	pkgtrace "sigs.k8s.io/cluster-api-provider-azure/pkg/trace"
 	"sigs.k8s.io/cluster-api-provider-azure/util/reconciler"
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
@@ -127,24 +124,15 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedMachinePool", req.Name)
 
-	ctx, _, span, err := pkgtrace.StartSpan(
+	ctx, span := tele.Tracer().Start(
 		ctx,
-		tele.Tracer(),
 		"controllers.AzureManagedMachinePoolReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureManagedMachinePool"),
-		),
 	)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 	defer span.End()
 
 	// Fetch the AzureManagedMachinePool instance
 	infraPool := &infrav1exp.AzureManagedMachinePool{}
-	err = r.Get(ctx, req.NamespacedName, infraPool)
+	err := r.Get(ctx, req.NamespacedName, infraPool)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return reconcile.Result{}, nil
