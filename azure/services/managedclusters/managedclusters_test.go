@@ -45,7 +45,7 @@ func TestReconcile(t *testing.T) {
 				ResourceGroupName: "my-rg",
 			},
 			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
-			expectedError:            "Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
+			expectedError:            "",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string) {
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any()).Return(nil)
 				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
@@ -60,7 +60,7 @@ func TestReconcile(t *testing.T) {
 				ResourceGroupName: "my-rg",
 			},
 			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
-			expectedError:            "Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
+			expectedError:            "Unable to update existing managed cluster in non terminal state. Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 					ProvisioningState: &provisioningstate,
@@ -89,7 +89,8 @@ func TestReconcile(t *testing.T) {
 				err := s.Reconcile(context.TODO(), &tc.managedclusterspec)
 				if tc.expectedError != "" {
 					g.Expect(err).To(HaveOccurred())
-					g.Expect(err).Should(MatchError(tc.expectedError))
+					g.Expect(err.Error()).To(HavePrefix(tc.expectedError))
+					g.Expect(err.Error()).To(ContainSubstring(provisioningstate))
 				} else {
 					g.Expect(err).NotTo(HaveOccurred())
 				}
