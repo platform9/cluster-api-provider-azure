@@ -142,7 +142,8 @@ func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *s
 	}
 
 	matchingLabels := client.MatchingLabels(map[string]string{
-		"agentpool": scope.InfraMachinePool.Name,
+		"agentpool":        scope.InfraMachinePool.Name,
+		"kubernetes.io/os": "linux", // windows nodes don't support daemonsets (still?) and definitely don't support nsenter
 	})
 
 	scope.V(2).Info(fmt.Sprintf("Listing node in agentpool '%s'", scope.InfraMachinePool.Name))
