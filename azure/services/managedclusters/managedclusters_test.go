@@ -89,7 +89,7 @@ func TestReconcile(t *testing.T) {
 				err := s.Reconcile(context.TODO(), &tc.managedclusterspec)
 				if tc.expectedError != "" {
 					g.Expect(err).To(HaveOccurred())
-					g.Expect(err).To(MatchError(tc.expectedError))
+					g.Expect(err).Should(MatchError(tc.expectedError))
 				} else {
 					g.Expect(err).NotTo(HaveOccurred())
 				}
