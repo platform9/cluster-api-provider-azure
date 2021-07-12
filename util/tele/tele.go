@@ -27,7 +27,9 @@ type tracer struct {
 	trace.Tracer
 }
 
-// Start is the trace.Tracer implementation
+// Start creates a new context with a new Azure correlation ID, then
+// creates a new trace.Span with that new context. This function then
+// returns the new Context and Span.
 func (t tracer) Start(
 	ctx context.Context,
 	op string,
