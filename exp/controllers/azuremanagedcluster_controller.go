@@ -22,6 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -98,7 +100,15 @@ func (r *AzureManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedCluster", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedClusterReconciler.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.AzureManagedClusterReconciler.Reconcile",
+		trace.WithAttributes(
+			attribute.String("namespace", req.Namespace),
+			attribute.String("name", req.Name),
+			attribute.String("kind", "AzureManagedCluster"),
+		),
+	)
 	defer span.End()
 
 	// Fetch the AzureManagedCluster instance
