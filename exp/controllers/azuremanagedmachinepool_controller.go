@@ -183,7 +183,7 @@ func (r *AzureManagedMachinePoolReconciler) Reconcile(ctx context.Context, req c
 		return reconcile.Result{}, err
 	}
 
-	if !ownerCluster.Status.InfrastructureReady {
+	if !ownerCluster.Status.ControlPlaneReady {
 		log.Info("Control Plane is not ready")
 		return reconcile.Result{}, nil
 	}
