@@ -34,7 +34,9 @@ const corrIDKeyVal corrIDKey = "x-ms-correlation-id"
 
 // ctxWithCorrID creates a CorrID and creates a new context.Context
 // with the new CorrID in it. It returns the _new_ context and the
-// newly creates CorrID. After you call this function, prefer to
+// newly created CorrID. If there was a problem creating the correlation
+// ID, the new context will not have the correlation ID in it and the
+// returned CorrID will be the empty string.After you call this function, prefer to
 // use the newly created context over the old one. Common usage is
 // below:
 //
@@ -42,19 +44,35 @@ const corrIDKeyVal corrIDKey = "x-ms-correlation-id"
 //	ctx, newCorrID := CtxWithCorrID(ctx)
 //	fmt.Println("new corr ID: ", newCorrID)
 //	doSomething(ctx)
-func ctxWithCorrID(ctx context.Context) (context.Context, CorrID, error) {
+func ctxWithCorrID(ctx context.Context) (context.Context, CorrID) {
 	currentCorrIDIface := ctx.Value(corrIDKeyVal)
 	if currentCorrIDIface != nil {
 		currentCorrID, ok := currentCorrIDIface.(CorrID)
 		if ok {
-			return ctx, currentCorrID, nil
+			return ctx, currentCorrID
 		}
 	}
 	uid, err := uuid.NewRandom()
 	if err != nil {
-		return nil, CorrID(""), err
+		return nil, CorrID("")
 	}
 	newCorrID := CorrID(uid.String())
 	ctx = context.WithValue(ctx, corrIDKeyVal, newCorrID)
-	return ctx, newCorrID, nil
+	return ctx, newCorrID
+}
+
+// CorrIDFromCtx attempts to fetch a correlation ID from the given
+// context.Context. If none exists, returns an empty CorrID and false.
+// Otherwise returns the CorrID value and true.
+func CorrIDFromCtx(ctx context.Context) (CorrID, bool) {
+	currentCorrIDIface := ctx.Value(corrIDKeyVal)
+	if currentCorrIDIface == nil {
+		return CorrID(""), false
+	}
+
+	if corrID, ok := currentCorrIDIface.(CorrID); ok {
+		return corrID, ok
+	}
+
+	return CorrID(""), false
 }

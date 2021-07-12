@@ -19,7 +19,6 @@ package tele
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -34,32 +33,8 @@ func (t tracer) Start(
 	op string,
 	opts ...trace.SpanOption,
 ) (context.Context, trace.Span) {
-	currentCorrIDIface := ctx.Value(corrIDKeyVal)
-	corrID := ""
-	if currentCorrIDIface == nil {
-		corrID = newCorrID()
-	} else {
-		cid, ok := currentCorrIDIface.(string)
-		if ok {
-			corrID = cid
-		} else {
-			corrID = newCorrID()
-		}
-	}
-
-	ctx = context.WithValue(ctx, corrIDKeyVal, corrID)
+	ctx, _ = ctxWithCorrID(ctx)
 	return t.Tracer.Start(ctx, op, opts...)
-}
-
-// newCorrID returns a new correlation ID to be put into a context.Context.
-// if there was a problem creating a correlation ID, an empty string will
-// be returned
-func newCorrID() string {
-	uid, err := uuid.NewRandom()
-	if err != nil {
-		return ""
-	}
-	return uid.String()
 }
 
 // Tracer returns an OpenTelemetry Tracer implementation to be used
