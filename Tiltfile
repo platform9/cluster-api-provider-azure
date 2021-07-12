@@ -16,7 +16,7 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capz",
-    "capi_version": "v0.4.0-beta.1",
+    "capi_version": "v0.4.0",
     "cert_manager_version": "v1.1.0",
     "kubernetes_version": "v1.19.11",
     "aks_kubernetes_version": "v1.20.5"
@@ -138,7 +138,7 @@ def capz():
     local_resource(
         "manager",
         cmd = 'mkdir -p .tiltbuild;CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags \'-extldflags "-static"\' -o .tiltbuild/manager',
-        deps = ["api", "cloud", "config", "controllers", "exp", "feature", "pkg", "go.mod", "go.sum", "main.go"]
+        deps = ["api", "azure", "config", "controllers", "exp", "feature", "pkg", "util", "go.mod", "go.sum", "main.go"]
     )
 
     dockerfile_contents = "\n".join([
@@ -168,6 +168,19 @@ def capz():
     )
 
     k8s_yaml(blob(yaml))
+
+def create_identity_secret():
+    #create secret for identity password
+    local("kubectl delete secret cluster-identity-secret --ignore-not-found=true")
+
+    os.putenv('AZURE_CLUSTER_IDENTITY_SECRET_NAME', 'cluster-identity-secret')
+    os.putenv('AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE', 'default')
+    os.putenv('CLUSTER_IDENTITY_NAME', 'cluster-identity')
+
+    substitutions = settings.get("kustomize_substitutions", {})
+    os.putenv('AZURE_CLIENT_SECRET_B64', substitutions.get("AZURE_CLIENT_SECRET_B64"))
+
+    local("cat templates/azure-cluster-identity/secret.yaml | " + envsubst_cmd + " | kubectl apply -f -", quiet=True)
 
 def create_crs():
     # create config maps
@@ -323,6 +336,8 @@ if settings.get("deploy_cert_manager"):
     deploy_cert_manager()
 
 deploy_capi()
+
+create_identity_secret()
 
 capz()
 

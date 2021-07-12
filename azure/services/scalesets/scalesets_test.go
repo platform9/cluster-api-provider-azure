@@ -150,7 +150,8 @@ func TestGetExistingVMSS(t *testing.T) {
 						Name:     to.StringPtr("Standard_D2"),
 					},
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-						ProvisioningState: to.StringPtr("Succeeded"),
+						SinglePlacementGroup: to.BoolPtr(false),
+						ProvisioningState:    to.StringPtr("Succeeded"),
 					},
 					Zones: &[]string{"1", "3"},
 				}, nil)
@@ -182,7 +183,8 @@ func TestGetExistingVMSS(t *testing.T) {
 					ID:   to.StringPtr("my-id"),
 					Name: to.StringPtr("my-vmss"),
 					VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
-						ProvisioningState: to.StringPtr("Succeeded"),
+						SinglePlacementGroup: to.BoolPtr(false),
+						ProvisioningState:    to.StringPtr("Succeeded"),
 					},
 				}, nil)
 				m.ListInstances(gomockinternal.AContext(), "my-rg", "my-vmss").Return([]compute.VirtualMachineScaleSetVM{}, autorest.NewErrorWithResponse("", "", &http.Response{StatusCode: 404}, "Not found"))
@@ -853,6 +855,7 @@ func newDefaultVMSS() compute.VirtualMachineScaleSet {
 		},
 		Zones: &[]string{"1", "3"},
 		VirtualMachineScaleSetProperties: &compute.VirtualMachineScaleSetProperties{
+			SinglePlacementGroup: to.BoolPtr(false),
 			UpgradePolicy: &compute.UpgradePolicy{
 				Mode: compute.UpgradeModeManual,
 			},
@@ -1057,7 +1060,7 @@ func setupDefaultVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorde
 			Version:   "1.0",
 		},
 	}
-	s.GetVMImage().Return(image, nil)
+	s.GetVMImage().Return(image, nil).AnyTimes()
 	s.SaveVMImageToStatus(image)
 }
 
@@ -1071,7 +1074,7 @@ func setupUpdateVMSSExpectations(s *mock_scalesets.MockScaleSetScopeMockRecorder
 			Version:   "2.0",
 		},
 	}
-	s.GetVMImage().Return(image, nil)
+	s.GetVMImage().Return(image, nil).AnyTimes()
 	s.SaveVMImageToStatus(image)
 }
 

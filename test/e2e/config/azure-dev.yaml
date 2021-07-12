@@ -9,7 +9,7 @@ providers:
     type: CoreProvider
     versions:
     - name: v0.4.0
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.1/core-components.yaml
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/core-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -22,7 +22,7 @@ providers:
     type: BootstrapProvider
     versions:
     - name: v0.4.0
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.1/bootstrap-components.yaml
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/bootstrap-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -35,7 +35,7 @@ providers:
     type: ControlPlaneProvider
     versions:
     - name: v0.4.0
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0-beta.1/control-plane-components.yaml
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v0.4.0/control-plane-components.yaml
       type: url
       files:
       - sourcePath: "../data/shared/v1alpha4/metadata.yaml"
@@ -80,8 +80,6 @@ providers:
       targetName: "cluster-template-conformance-ci-artifacts.yaml"
     - sourcePath: "${PWD}/templates/test/dev/cluster-template-custom-builds.yaml"
       targetName: "cluster-template-conformance-presubmit-artifacts.yaml"
-    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-multi-tenancy.yaml"
-      targetName: "cluster-template-multi-tenancy.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-windows.yaml"
       targetName: "cluster-template-windows.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-machine-pool-windows.yaml"
@@ -90,6 +88,10 @@ providers:
       targetName: "cluster-template-external-cloud-provider.yaml"
     - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-aks-multi-tenancy.yaml"
       targetName: "cluster-template-aks-multi-tenancy.yaml"
+    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-custom-vnet.yaml"
+      targetName: "cluster-template-custom-vnet.yaml"
+    - sourcePath: "${PWD}/templates/test/ci/cluster-template-prow-identity-from-env.yaml"
+      targetName: "cluster-template-identity-from-env.yaml"        
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.19.7}"
@@ -110,6 +112,7 @@ variables:
   CONFORMANCE_NODES: "${CONFORMANCE_NODES:-1}"
   IP_FAMILY: "IPv4" # this is used by the CAPI quickstart spec
   MULTI_TENANCY_IDENTITY_NAME: "multi-tenancy-identity"
+  CLUSTER_IDENTITY_NAME: "cluster-identity"
   NODE_DRAIN_TIMEOUT: "60s"
 
 intervals:

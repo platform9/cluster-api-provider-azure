@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	"sigs.k8s.io/cluster-api/util/conditions"
-	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -169,16 +169,12 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			conditions.MarkFalse(azureCluster, infrav1.NetworkInfrastructureReadyCondition, infrav1.NamespaceNotAllowedByIdentity, clusterv1.ConditionSeverityError, "")
 			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current cluster namespace")
 		}
-		if identity.Namespace == azureCluster.Namespace {
-			patchhelper, err := patch.NewHelper(identity, r.Client)
-			if err != nil {
-				return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
-			}
-			identity.ObjectMeta.OwnerReferences = azureCluster.GetOwnerReferences()
-			if err := patchhelper.Patch(ctx, identity); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
+	} else {
+		warningMessage := ("You're using deprecated functionality: ")
+		warningMessage += ("Using Azure credentials from the manager environment is deprecated and will be removed in future releases. ")
+		warningMessage += ("Please specify an AzureClusterIdentity for the AzureCluster instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html ")
+		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
+		r.Recorder.Eventf(azureCluster, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
 	}
 
 	// Create the scope.

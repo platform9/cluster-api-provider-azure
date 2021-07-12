@@ -18,9 +18,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"sigs.k8s.io/cluster-api/util/patch"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -211,16 +212,12 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 		if !scope.IsClusterNamespaceAllowed(ctx, r.Client, identity.Spec.AllowedNamespaces, azureControlPlane.Namespace) {
 			return reconcile.Result{}, errors.New("AzureClusterIdentity list of allowed namespaces doesn't include current azure managed control plane namespace")
 		}
-		if identity.Namespace == azureControlPlane.Namespace {
-			patchHelper, err := patch.NewHelper(identity, r.Client)
-			if err != nil {
-				return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
-			}
-			identity.ObjectMeta.OwnerReferences = azureControlPlane.GetOwnerReferences()
-			if err := patchHelper.Patch(ctx, identity); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
+	} else {
+		warningMessage := ("You're using deprecated functionality: ")
+		warningMessage += ("Using Azure credentials from the manager environment is deprecated and will be removed in future releases. ")
+		warningMessage += ("Please specify an AzureClusterIdentity for the AzureManagedControlPlane instead, see: https://capz.sigs.k8s.io/topics/multitenancy.html ")
+		log.Info(fmt.Sprintf("WARNING, %s", warningMessage))
+		r.Recorder.Eventf(azureControlPlane, corev1.EventTypeWarning, "AzureClusterIdentity", warningMessage)
 	}
 
 	// Create the scope.
