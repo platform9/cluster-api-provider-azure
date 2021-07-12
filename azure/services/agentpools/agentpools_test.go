@@ -76,7 +76,7 @@ func TestReconcile(t *testing.T) {
 				Name:          "my-agentpool",
 			},
 			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
-			expectedError:            "",
+			expectedError:            "Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
 			expect: func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string) {
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool", gomock.Any()).Return(nil)
 				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
@@ -92,7 +92,7 @@ func TestReconcile(t *testing.T) {
 				Name:          "my-agentpool",
 			},
 			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
-			expectedError:            "",
+			expectedError:            "Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
 			expect: func(m *mock_agentpools.MockClientMockRecorder, provisioningstate string) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-cluster", "my-agentpool").Return(containerservice.AgentPool{ManagedClusterAgentPoolProfileProperties: &containerservice.ManagedClusterAgentPoolProfileProperties{
 					ProvisioningState: &provisioningstate,

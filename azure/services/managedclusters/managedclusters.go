@@ -203,8 +203,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	} else {
 		ps := *existingMC.ManagedClusterProperties.ProvisioningState
 		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
-			klog.V(2).Infof("Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded")
-			return nil
+			msg := fmt.Sprintf("Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
+			klog.V(2).Infof(msg)
+			return errors.New(msg)
 		}
 
 		// Normalize properties for the desired (CR spec) and existing managed

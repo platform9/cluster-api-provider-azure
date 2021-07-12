@@ -45,7 +45,7 @@ func TestReconcile(t *testing.T) {
 				ResourceGroupName: "my-rg",
 			},
 			provisioningStatesToTest: []string{"Canceled", "Succeeded", "Failed"},
-			expectedError:            "",
+			expectedError:            "Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string) {
 				m.CreateOrUpdate(gomockinternal.AContext(), "my-rg", "my-managedcluster", gomock.Any()).Return(nil)
 				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
@@ -60,7 +60,7 @@ func TestReconcile(t *testing.T) {
 				ResourceGroupName: "my-rg",
 			},
 			provisioningStatesToTest: []string{"Deleting", "InProgress", "randomStringHere"},
-			expectedError:            "",
+			expectedError:            "Unable to update existing managed cluster in non terminal state.  Managed cluster must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state",
 			expect: func(m *mock_managedclusters.MockClientMockRecorder, provisioningstate string) {
 				m.Get(gomockinternal.AContext(), "my-rg", "my-managedcluster").Return(containerservice.ManagedCluster{ManagedClusterProperties: &containerservice.ManagedClusterProperties{
 					ProvisioningState: &provisioningstate,
