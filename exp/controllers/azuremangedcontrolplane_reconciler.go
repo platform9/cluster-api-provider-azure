@@ -216,7 +216,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileManagedCluster(ctx context
 	if azure.ResourceNotFound(err) {
 		opt1 := client.InNamespace(scope.ControlPlane.Namespace)
 		opt2 := client.MatchingLabels(map[string]string{
-			infrav1exp.LabelAgentPoolMode: string(infrav1exp.AgentPoolModeSystem),
+			infrav1exp.LabelAgentPoolMode: string(infrav1exp.NodePoolModeSystem),
 			clusterv1.ClusterLabelName:    scope.Cluster.Name,
 		})
 

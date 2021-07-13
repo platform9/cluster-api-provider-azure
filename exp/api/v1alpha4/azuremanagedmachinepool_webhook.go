@@ -107,7 +107,7 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object) error {
 		}
 	}
 
-	if r.Spec.Mode != string(AgentPoolModeSystem) && old.Spec.Mode == string(AgentPoolModeSystem) {
+	if r.Spec.Mode != string(NodePoolModeSystem) && old.Spec.Mode == string(NodePoolModeSystem) {
 		// validate for last system node pool
 		if err := r.validateLastSystemNodePool(); err != nil {
 			allErrs = append(allErrs, field.Invalid(
@@ -128,7 +128,7 @@ func (r *AzureManagedMachinePool) ValidateUpdate(oldRaw runtime.Object) error {
 func (r *AzureManagedMachinePool) ValidateDelete() error {
 	azuremanagedmachinepoollog.Info("validate delete", "name", r.Name)
 
-	if r.Spec.Mode != string(AgentPoolModeSystem) {
+	if r.Spec.Mode != string(NodePoolModeSystem) {
 		return nil
 	}
 
@@ -166,7 +166,7 @@ func (r *AzureManagedMachinePool) validateLastSystemNodePool() error {
 	opt1 := client.InNamespace(r.Namespace)
 	opt2 := client.MatchingLabels(map[string]string{
 		clusterv1.ClusterLabelName: clusterName,
-		LabelAgentPoolMode:         string(AgentPoolModeSystem),
+		LabelAgentPoolMode:         string(NodePoolModeSystem),
 	})
 
 	ammpList := &AzureManagedMachinePoolList{}

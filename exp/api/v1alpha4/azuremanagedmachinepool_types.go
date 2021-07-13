@@ -25,8 +25,11 @@ const (
 	// LabelAgentPoolMode represents mode of an agent pool. Possible values include: System, User.
 	LabelAgentPoolMode = "azuremanagedmachinepool.infrastructure.cluster.x-k8s.io/agentpoolmode"
 
-	// AgentPoolModeSystem represents mode system for azuremachinepool.
-	AgentPoolModeSystem NodePoolMode = "System"
+	// NodePoolModeSystem represents mode system for azuremachinepool.
+	NodePoolModeSystem NodePoolMode = "System"
+
+	// NodePoolModeUser represents mode user for azuremachinepool.
+	NodePoolModeUser NodePoolMode = "User"
 )
 
 // NodePoolMode enumerates the values for agent pool mode.
