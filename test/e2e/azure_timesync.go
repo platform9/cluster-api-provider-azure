@@ -113,7 +113,6 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 		specName = "azure-timesync"
 		input    AzureTimeSyncSpecInput
 		thirty   = 30 * time.Second
-		five     = 5 * time.Second
 	)
 
 	input = inputGetter()
@@ -150,7 +149,8 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 	}
 
 	matchingLabels := client.MatchingLabels(map[string]string{
-		"app": "nsenter",
+		"app":              "nsenter",
+		"kubernetes.io/os": "linux",
 	})
 
 	Eventually(func() error {
@@ -238,6 +238,8 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 						return fmt.Errorf("expected \"%s\" in command output:\n%s", expected, stdout.String())
 					}
 
+					Byf("time sync OK on host %s", s.Hostname)
+
 					return nil
 				}
 			}
@@ -254,6 +256,6 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 			)
 		}
 
-		return nil
-	}, thirty, five).Should(Succeed())
+		return kinderrors.AggregateConcurrent(testFuncs)
+	}, thirty, thirty).Should(Succeed())
 }
