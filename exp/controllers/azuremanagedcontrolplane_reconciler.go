@@ -261,7 +261,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 
 	old := scope.ControlPlane.DeepCopy()
 
-	scope.Logger.Info("control plane endpoint", fqdn)
+	scope.Logger.Info("control plane endpoint", "fqdn", fqdn)
 	scope.ControlPlane.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 		Host: fqdn,
 		Port: 443,
@@ -271,7 +271,7 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 		return errors.Wrap(err, "failed to set control plane endpoint")
 	}
 
-	scope.Logger.Info("control plane endpoint after patching", scope.ControlPlane.Spec.ControlPlaneEndpoint)
+	scope.Logger.Info("control plane endpoint after patching", "fqdn", scope.ControlPlane.Spec.ControlPlaneEndpoint)
 
 	return nil
 }
