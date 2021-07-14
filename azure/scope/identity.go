@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"reflect"
 
+	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/pkg/errors"
 	infrav1 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha4"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
-	"sigs.k8s.io/cluster-api-provider-azure/util/identity"
 	"sigs.k8s.io/cluster-api-provider-azure/util/system"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	clusterctl "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
@@ -38,9 +39,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetAuthorizerInput contains the input fields required for GetAuthorizer to create an autorest.Authorizer instance.
+type GetAuthorizerInput struct {
+	aadEndpoint             string
+	resourceManagerEndpoint string
+	tenantID                string
+}
+
 // CredentialsProvider defines the behavior for azure identity based credential providers.
 type CredentialsProvider interface {
-	GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error)
+	GetAuthorizer(ctx context.Context, input GetAuthorizerInput) (autorest.Authorizer, error)
 }
 
 // AzureCredentialsProvider represents a credential provider with azure cluster identity.
@@ -96,8 +104,8 @@ func NewAzureClusterCredentialsProvider(ctx context.Context, kubeClient client.C
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureCluster metadata.
-func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, p.AzureCluster.ObjectMeta)
+func (p *AzureClusterCredentialsProvider) GetAuthorizer(ctx context.Context, input GetAuthorizerInput) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, input, p.AzureCluster.ObjectMeta)
 }
 
 // NewManagedControlPlaneCredentialsProvider creates a new ManagedControlPlaneCredentialsProvider from the supplied inputs.
@@ -132,15 +140,62 @@ func NewManagedControlPlaneCredentialsProvider(ctx context.Context, kubeClient c
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity. It delegates to AzureCredentialsProvider with AzureManagedControlPlane metadata.
-func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string) (autorest.Authorizer, error) {
-	return p.AzureCredentialsProvider.GetAuthorizer(ctx, resourceManagerEndpoint, p.AzureManagedControlPlane.ObjectMeta)
+func (p *ManagedControlPlaneCredentialsProvider) GetAuthorizer(ctx context.Context, input GetAuthorizerInput) (autorest.Authorizer, error) {
+	return p.AzureCredentialsProvider.GetAuthorizer(ctx, input, p.AzureManagedControlPlane.ObjectMeta)
 }
 
 // GetAuthorizer returns an Azure authorizer based on the provided azure identity and cluster metadata.
-func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceManagerEndpoint string, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
-	azureIdentityType, err := getAzureIdentityType(p.Identity)
+func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, input GetAuthorizerInput, clusterMeta metav1.ObjectMeta) (autorest.Authorizer, error) {
+	var spt *adal.ServicePrincipalToken
+	switch p.Identity.Spec.Type {
+	case infrav1.ServicePrincipal:
+		if err := createAzureIdentityWithBindings(ctx, p.Identity, clusterMeta, p.Client); err != nil {
+			return nil, err
+		}
+
+		msiEndpoint, err := adal.GetMSIVMEndpoint()
+		if err != nil {
+			return nil, errors.Errorf("failed to get MSI endpoint: %v", err)
+		}
+
+		spt, err = adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, input.resourceManagerEndpoint, p.Identity.Spec.ClientID)
+		if err != nil {
+			return nil, errors.Errorf("failed to get token from service principal identity: %v", err)
+		}
+
+	case infrav1.ManualServicePrincipal:
+		oauthConfig, err := adal.NewOAuthConfig(input.aadEndpoint, input.tenantID)
+		if err != nil {
+			return nil, err
+		}
+
+		var clientSecret corev1.Secret
+		if err := p.Client.Get(ctx, client.ObjectKey{Namespace: p.Identity.Spec.ClientSecret.Namespace, Name: p.Identity.Spec.ClientSecret.Name}, &clientSecret); err != nil {
+			return nil, err
+		}
+
+		clientSecretVal, ok := clientSecret.StringData["clientSecret"]
+		if !ok {
+			return nil, errors.Errorf("key %s not found in secret %s", "clientSecret", p.Identity.Spec.ClientSecret.Name)
+		}
+
+		spt, err = adal.NewServicePrincipalToken(*oauthConfig, p.Identity.Spec.ClientID, clientSecretVal, input.resourceManagerEndpoint)
+		if err != nil {
+			return nil, errors.Errorf("failed to get token from service principal identity: %v", err)
+		}
+
+	default:
+		return nil, errors.Errorf("identity type %s not supported", p.Identity.Spec.Type)
+	}
+
+	return autorest.NewBearerAuthorizer(spt), nil
+}
+
+func createAzureIdentityWithBindings(ctx context.Context, azureIdentity *infrav1.AzureClusterIdentity, clusterMeta metav1.ObjectMeta,
+	kubeClient client.Client) error {
+	azureIdentityType, err := getAzureIdentityType(azureIdentity)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// AzureIdentity and AzureIdentityBinding will no longer have an OwnerRef starting from capz release v0.5.0 because of the following:
@@ -154,7 +209,7 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 			APIVersion: "aadpodidentity.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      identity.GetAzureIdentityName(clusterMeta.Name, clusterMeta.Namespace, p.Identity.Name),
+			Name:      identity.GetAzureIdentityName(clusterMeta.Name, clusterMeta.Namespace, azureIdentity.Name),
 			Namespace: system.GetManagerNamespace(),
 			Annotations: map[string]string{
 				aadpodv1.BehaviorKey: "namespaced",
@@ -167,15 +222,15 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 		},
 		Spec: aadpodv1.AzureIdentitySpec{
 			Type:           azureIdentityType,
-			TenantID:       p.Identity.Spec.TenantID,
-			ClientID:       p.Identity.Spec.ClientID,
-			ClientPassword: p.Identity.Spec.ClientSecret,
-			ResourceID:     p.Identity.Spec.ResourceID,
+			TenantID:       azureIdentity.Spec.TenantID,
+			ClientID:       azureIdentity.Spec.ClientID,
+			ClientPassword: azureIdentity.Spec.ClientSecret,
+			ResourceID:     azureIdentity.Spec.ResourceID,
 		},
 	}
-	err = p.Client.Create(ctx, copiedIdentity)
+	err = kubeClient.Create(ctx, copiedIdentity)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
+		return errors.Errorf("failed to create copied AzureIdentity %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
 	}
 
 	azureIdentityBinding := &aadpodv1.AzureIdentityBinding{
@@ -197,26 +252,12 @@ func (p *AzureCredentialsProvider) GetAuthorizer(ctx context.Context, resourceMa
 			Selector:      infrav1.AzureIdentityBindingSelector, //should be same as selector added on controller
 		},
 	}
-	err = p.Client.Create(ctx, azureIdentityBinding)
+	err = kubeClient.Create(ctx, azureIdentityBinding)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
+		return errors.Errorf("failed to create AzureIdentityBinding %s in %s: %v", copiedIdentity.Name, system.GetManagerNamespace(), err)
 	}
 
-	var spt *adal.ServicePrincipalToken
-	msiEndpoint, err := adal.GetMSIVMEndpoint()
-	if err != nil {
-		return nil, errors.Errorf("failed to get MSI endpoint: %v", err)
-	}
-	if p.Identity.Spec.Type == infrav1.ServicePrincipal {
-		spt, err = adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, resourceManagerEndpoint, p.Identity.Spec.ClientID)
-		if err != nil {
-			return nil, errors.Errorf("failed to get token from service principal identity: %v", err)
-		}
-	} else if p.Identity.Spec.Type == infrav1.UserAssignedMSI {
-		return nil, errors.Errorf("UserAssignedMSI not supported: %v", err)
-	}
-
-	return autorest.NewBearerAuthorizer(spt), nil
+	return nil
 }
 
 func getAzureIdentityType(identity *infrav1.AzureClusterIdentity) (aadpodv1.IdentityType, error) {

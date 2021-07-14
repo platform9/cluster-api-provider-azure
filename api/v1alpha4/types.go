@@ -383,7 +383,7 @@ const (
 )
 
 // IdentityType represents different types of identities.
-// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI
+// +kubebuilder:validation:Enum=ServicePrincipal;UserAssignedMSI;ManualServicePrincipal
 type IdentityType string
 
 const (
@@ -392,6 +392,9 @@ const (
 
 	// ServicePrincipal represents a service principal.
 	ServicePrincipal IdentityType = "ServicePrincipal"
+
+	// ManualServicePrincipal represents a service principal.
+	ManualServicePrincipal IdentityType = "ManualServicePrincipal"
 )
 
 // OSDisk defines the operating system disk for a VM.

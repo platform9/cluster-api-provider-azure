@@ -36,6 +36,7 @@ type AzureClients struct {
 	Authorizer                 autorest.Authorizer
 	ResourceManagerEndpoint    string
 	ResourceManagerVMDNSSuffix string
+	ActiveDirectoryEndpoint    string
 }
 
 // CloudEnvironment returns the Azure environment the controller runs in.
@@ -119,9 +120,14 @@ func (c *AzureClients) setCredentialsWithProvider(ctx context.Context, subscript
 	c.EnvironmentSettings = settings
 	c.ResourceManagerEndpoint = settings.Environment.ResourceManagerEndpoint
 	c.ResourceManagerVMDNSSuffix = settings.Environment.ResourceManagerVMDNSSuffix
+	c.ActiveDirectoryEndpoint = settings.Environment.ActiveDirectoryEndpoint
 	c.Values[auth.SubscriptionID] = strings.TrimSuffix(subscriptionID, "\n")
 
-	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, c.ResourceManagerEndpoint)
+	c.Authorizer, err = credentialsProvider.GetAuthorizer(ctx, GetAuthorizerInput{
+		resourceManagerEndpoint: c.ResourceManagerEndpoint,
+		tenantID:                c.TenantID(),
+		aadEndpoint:             c.ActiveDirectoryEndpoint,
+	})
 	return err
 }
 
@@ -140,6 +146,7 @@ func (c *AzureClients) getSettingsFromEnvironment(environmentName string) (s aut
 	setValue(s, auth.Username)
 	setValue(s, auth.Password)
 	setValue(s, auth.Resource)
+	setValue(s, auth.ActiveDirectoryEndpoint)
 	if v := s.Values[auth.EnvironmentName]; v == "" {
 		s.Environment = azure.PublicCloud
 	} else {

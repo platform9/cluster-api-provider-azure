@@ -253,6 +253,7 @@ spec:
                 enum:
                 - ServicePrincipal
                 - UserAssignedMSI
+                - ManualServicePrincipal
                 type: string
             required:
             - clientID
