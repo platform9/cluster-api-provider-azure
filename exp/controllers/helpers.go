@@ -612,3 +612,35 @@ func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Fun
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
 }
+
+// ClusterToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for
+// Cluster events and returns reconciliation requests for an infrastructure provider object.
+func ClusterToInfrastructureMapFunc(gvk schema.GroupVersionKind) handler.MapFunc {
+	return func(o client.Object) []reconcile.Request {
+		c, ok := o.(*clusterv1.Cluster)
+		if !ok {
+			return nil
+		}
+
+		// Return early if the InfrastructureRef is nil.
+		if c.Spec.ControlPlaneRef == nil {
+			return nil
+		}
+
+		gk := gvk.GroupKind()
+		// Return early if the GroupKind doesn't match what we expect.
+		controlPlaneGK := c.Spec.ControlPlaneRef.GroupVersionKind().GroupKind()
+		if gk != controlPlaneGK {
+			return nil
+		}
+
+		return []reconcile.Request{
+			{
+				NamespacedName: client.ObjectKey{
+					Namespace: c.Namespace,
+					Name:      c.Spec.InfrastructureRef.Name,
+				},
+			},
+		}
+	}
+}

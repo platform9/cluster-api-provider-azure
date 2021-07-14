@@ -63,14 +63,13 @@ type AzureManagedControlPlaneReconciler struct {
 // SetupWithManager initializes this controller with a manager.
 func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager, options controller.Options) error {
 	log := r.Log.WithValues("controller", "AzureManagedControlPlane")
-	azManagedControlPlane := &infrav1exp.AzureManagedControlPlane{}
 
 	// map requests for machine pools corresponding to AzureManagedControlPlane's defaultPool back to the corresponding AzureManagedControlPlane.
 	azureManagedMachinePoolMapper := MachinePoolToAzureManagedControlPlaneMapFunc(ctx, r.Client, infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"), log)
 
 	c, err := ctrl.NewControllerManagedBy(mgr).
 		WithOptions(options).
-		For(azManagedControlPlane).
+		For(&infrav1exp.AzureManagedControlPlane{}).
 		WithEventFilter(predicates.ResourceNotPausedAndHasFilterLabel(ctrl.LoggerFrom(ctx), r.WatchFilterValue)).
 		// watch MachinePool resources
 		Watches(
@@ -85,8 +84,8 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
-		predicates.ClusterUnpaused(log),
+		handler.EnqueueRequestsFromMapFunc(ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
+		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
