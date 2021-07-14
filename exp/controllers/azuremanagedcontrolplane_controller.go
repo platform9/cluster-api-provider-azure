@@ -84,7 +84,7 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 	// Add a watch on clusterv1.Cluster object for unpause & ready notifications.
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
-		handler.EnqueueRequestsFromMapFunc(ClusterToInfrastructureMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
+		handler.EnqueueRequestsFromMapFunc(ClusterToControlPlaneMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
 		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")

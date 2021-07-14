@@ -613,9 +613,9 @@ func MachinePoolMachineHasStateOrVersionChange(logger logr.Logger) predicate.Fun
 	}
 }
 
-// ClusterToInfrastructureMapFunc returns a handler.ToRequestsFunc that watches for
-// Cluster events and returns reconciliation requests for an infrastructure provider object.
-func ClusterToInfrastructureMapFunc(gvk schema.GroupVersionKind) handler.MapFunc {
+// ClusterToControlPlaneMapFunc returns a handler.ToRequestsFunc that watches for
+// Cluster events and returns reconciliation requests for a control plane provider object.
+func ClusterToControlPlaneMapFunc(gvk schema.GroupVersionKind) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
 		c, ok := o.(*clusterv1.Cluster)
 		if !ok {
