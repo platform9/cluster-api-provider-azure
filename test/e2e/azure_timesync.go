@@ -245,7 +245,7 @@ func AzureDaemonsetTimeSyncSpec(ctx context.Context, inputGetter func() AzureTim
 
 			testFuncs = append(testFuncs,
 				execToStringFn(
-					"✓ chronyd is active",
+					"chronyd is active",
 					"systemctl is-active chronyd && echo chronyd is active",
 				),
 				execToStringFn(
