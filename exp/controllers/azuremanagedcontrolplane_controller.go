@@ -85,7 +85,6 @@ func (r *AzureManagedControlPlaneReconciler) SetupWithManager(ctx context.Contex
 	if err = c.Watch(
 		&source.Kind{Type: &clusterv1.Cluster{}},
 		handler.EnqueueRequestsFromMapFunc(ClusterToControlPlaneMapFunc(infrav1exp.GroupVersion.WithKind("AzureManagedControlPlane"))),
-		predicates.ClusterUnpausedAndInfrastructureReady(log),
 	); err != nil {
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
