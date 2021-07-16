@@ -53,7 +53,10 @@ func New(scope TagScope) *Service {
 
 // Reconcile ensures tags are correct.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "tags.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"tags.Service.Reconcile",
+	)
 	defer span.End()
 
 	for _, tagsSpec := range s.Scope.TagsSpecs() {

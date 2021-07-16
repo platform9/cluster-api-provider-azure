@@ -52,7 +52,10 @@ func New(scope GroupScope) *Service {
 
 // Reconcile gets/creates/updates a resource group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "groups.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"groups.Service.Reconcile",
+	)
 	defer span.End()
 
 	if _, err := s.client.Get(ctx, s.Scope.ResourceGroup()); err == nil {

@@ -79,7 +79,10 @@ func New(scope VMScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile gets/creates/updates a virtual machine.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "virtualmachines.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"virtualmachines.Service.Reconcile",
+	)
 	defer span.End()
 
 	vmSpec := s.Scope.VMSpec()

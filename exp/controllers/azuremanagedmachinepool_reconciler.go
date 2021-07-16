@@ -88,7 +88,10 @@ func newAzureManagedMachinePoolService(scope *scope.ManagedControlPlaneScope) *a
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureManagedMachinePoolService) Reconcile(ctx context.Context, scope *scope.ManagedControlPlaneScope) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureManagedMachinePoolService.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.azureManagedMachinePoolService.Reconcile",
+	)
 	defer span.End()
 
 	scope.Logger.Info("reconciling machine pool")

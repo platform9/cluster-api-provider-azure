@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/cluster-api-provider-azure/pkg/coalescing"
+
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
@@ -127,17 +128,19 @@ func (ampmr *AzureMachinePoolMachineController) SetupWithManager(ctx context.Con
 
 // Reconcile idempotently gets, creates, and updates a machine pool.
 func (ampmr *AzureMachinePoolMachineController) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampmr.ReconcileTimeout))
-	defer cancel()
-	logger := ampmr.Log.WithValues("namespace", req.Namespace, "azureMachinePoolMachine", req.Name)
-
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureMachinePoolMachineController.Reconcile",
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.AzureMachinePoolController.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureMachinePoolMachine"),
-		))
+		),
+	)
 	defer span.End()
+	ctx, cancel := context.WithTimeout(ctx, reconciler.DefaultedLoopTimeout(ampmr.ReconcileTimeout))
+	defer cancel()
+	logger := ampmr.Log.WithValues("namespace", req.Namespace, "azureMachinePoolMachine", req.Name)
 
 	machine := &infrav1exp.AzureMachinePoolMachine{}
 	err := ampmr.Get(ctx, req.NamespacedName, machine)
@@ -352,7 +355,10 @@ func newAzureMachinePoolMachineReconciler(scope *scope.MachinePoolMachineScope) 
 
 // Reconcile will reconcile the state of the Machine Pool Machine with the state of the Azure VMSS VM.
 func (r *azureMachinePoolMachineReconciler) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolMachineReconciler.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.azureMachinePoolMachineReconciler.Reconcile",
+	)
 	defer span.End()
 
 	if err := r.scalesetVMsService.Reconcile(ctx); err != nil {

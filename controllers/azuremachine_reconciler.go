@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/tags"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/virtualmachines"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmextensions"
+
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -75,7 +76,10 @@ func newAzureMachineService(machineScope *scope.MachineScope) (*azureMachineServ
 
 // Reconcile reconciles all the services in a predetermined order.
 func (s *azureMachineService) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachineService.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.azureMachineService.Reconcile",
+	)
 	defer span.End()
 
 	if err := s.publicIPsSvc.Reconcile(ctx); err != nil {

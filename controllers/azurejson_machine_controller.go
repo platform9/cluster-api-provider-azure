@@ -101,12 +101,15 @@ func (r *AzureJSONMachineReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureMachine", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureJSONMachineReconciler.Reconcile",
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.AzureJSONMachineReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureMachine"),
-		))
+		),
+	)
 	defer span.End()
 
 	// Fetch the AzureMachine instance

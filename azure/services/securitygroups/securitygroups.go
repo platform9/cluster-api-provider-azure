@@ -54,7 +54,10 @@ func New(scope NSGScope) *Service {
 
 // Reconcile gets/creates/updates a network security group.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "securitygroups.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"securitygroups.Service.Reconcile",
+	)
 	defer span.End()
 
 	if !s.Scope.IsVnetManaged() {

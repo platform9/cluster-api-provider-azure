@@ -54,7 +54,10 @@ func New(scope NICScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "networkinterfaces.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"networkinterfaces.Service.Reconcile",
+	)
 	defer span.End()
 
 	for _, nicSpec := range s.Scope.NICSpecs() {

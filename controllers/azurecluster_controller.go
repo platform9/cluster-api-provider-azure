@@ -112,12 +112,15 @@ func (r *AzureClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureCluster", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureClusterReconciler.Reconcile",
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.AzureClusterReconciler.Reconcile",
 		trace.WithAttributes(
 			attribute.String("namespace", req.Namespace),
 			attribute.String("name", req.Name),
 			attribute.String("kind", "AzureCluster"),
-		))
+		),
+	)
 	defer span.End()
 
 	// Fetch the AzureCluster instance

@@ -42,7 +42,10 @@ type Spec struct {
 
 // Reconcile idempotently creates or updates a agent pool, if possible.
 func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
-	ctx, span := tele.Tracer().Start(ctx, "agentpools.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"agentpools.Service.Reconcile",
+	)
 	defer span.End()
 
 	agentPoolSpec, ok := spec.(*Spec)

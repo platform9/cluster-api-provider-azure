@@ -53,7 +53,10 @@ func New(scope SubnetScope) *Service {
 
 // Reconcile gets/creates/updates a subnet.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "subnets.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"subnets.Service.Reconcile",
+	)
 	defer span.End()
 
 	for _, subnetSpec := range s.Scope.SubnetSpecs() {

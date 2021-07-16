@@ -54,7 +54,10 @@ func New(scope PublicIPScope) *Service {
 
 // Reconcile gets/creates/updates a public ip.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "publicips.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"publicips.Service.Reconcile",
+	)
 	defer span.End()
 
 	for _, ip := range s.Scope.PublicIPSpecs() {

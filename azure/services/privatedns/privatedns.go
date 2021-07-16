@@ -52,7 +52,10 @@ func New(scope Scope) *Service {
 
 // Reconcile creates or updates the private zone, links it to the vnet, and creates DNS records.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "privatedns.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"privatedns.Service.Reconcile",
+	)
 	defer span.End()
 
 	zoneSpec := s.Scope.PrivateDNSSpec()

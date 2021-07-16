@@ -50,7 +50,10 @@ func New(scope VMSSExtensionScope) *Service {
 
 // Reconcile creates or updates the VMSS extension.
 func (s *Service) Reconcile(ctx context.Context) error {
-	_, span := tele.Tracer().Start(ctx, "vmssextensions.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"vmssextensions.Service.Reconcile",
+	)
 	defer span.End()
 
 	for _, extensionSpec := range s.Scope.VMSSExtensionSpecs() {

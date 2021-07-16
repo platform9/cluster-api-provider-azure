@@ -74,7 +74,10 @@ func NewService(scope ScaleSetScope, skuCache *resourceskus.Cache) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) (retErr error) {
-	ctx, span := tele.Tracer().Start(ctx, "scalesets.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"scalesets.Service.Reconcile",
+	)
 	defer span.End()
 
 	if err := s.validateSpec(ctx); err != nil {

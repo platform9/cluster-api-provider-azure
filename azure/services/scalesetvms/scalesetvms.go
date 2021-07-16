@@ -58,7 +58,10 @@ func NewService(scope ScaleSetVMScope) *Service {
 
 // Reconcile idempotently gets, creates, and updates a scale set.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scalesetvms.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"scalesetvms.Service.Reconcile",
+	)
 	defer span.End()
 
 	var (

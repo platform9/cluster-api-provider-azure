@@ -25,8 +25,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -113,12 +111,7 @@ func (r *AzureManagedControlPlaneReconciler) Reconcile(ctx context.Context, req 
 	defer cancel()
 	log := r.Log.WithValues("namespace", req.Namespace, "azureManagedControlPlane", req.Name)
 
-	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile",
-		trace.WithAttributes(
-			attribute.String("namespace", req.Namespace),
-			attribute.String("name", req.Name),
-			attribute.String("kind", "AzureManagedControlPlane"),
-		))
+	ctx, span := tele.Tracer().Start(ctx, "controllers.AzureManagedControlPlaneReconciler.Reconcile")
 	defer span.End()
 
 	// Fetch the AzureManagedControlPlane instance

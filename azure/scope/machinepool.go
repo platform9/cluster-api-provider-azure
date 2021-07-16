@@ -481,7 +481,10 @@ func (m *MachinePoolScope) SetAnnotation(key, value string) {
 
 // PatchObject persists the machine spec and status.
 func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.PatchObject")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"scope.MachinePoolScope.PatchObject",
+	)
 	defer span.End()
 
 	return m.patchHelper.Patch(ctx, m.AzureMachinePool)
@@ -489,7 +492,10 @@ func (m *MachinePoolScope) PatchObject(ctx context.Context) error {
 
 // Close the MachineScope by updating the machine spec, machine status.
 func (m *MachinePoolScope) Close(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "scope.MachinePoolScope.Close")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"scope.MachinePoolScope.Close",
+	)
 	defer span.End()
 
 	if m.vmssState != nil {

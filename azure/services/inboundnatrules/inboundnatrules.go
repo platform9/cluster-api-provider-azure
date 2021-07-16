@@ -54,7 +54,10 @@ func New(scope InboundNatScope) *Service {
 
 // Reconcile gets/creates/updates an inbound NAT rule.
 func (s *Service) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "inboundnatrules.Service.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"inboundnatrules.Service.Reconcile",
+	)
 	defer span.End()
 
 	for _, inboundNatSpec := range s.Scope.InboundNatSpecs() {

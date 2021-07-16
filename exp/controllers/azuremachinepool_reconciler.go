@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/roleassignments"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/scalesets"
 	"sigs.k8s.io/cluster-api-provider-azure/azure/services/vmssextensions"
+
 	"sigs.k8s.io/cluster-api-provider-azure/util/tele"
 )
 
@@ -57,7 +58,10 @@ func newAzureMachinePoolService(machinePoolScope *scope.MachinePoolScope) (*azur
 
 // Reconcile reconciles all the services in pre determined order.
 func (s *azureMachinePoolService) Reconcile(ctx context.Context) error {
-	ctx, span := tele.Tracer().Start(ctx, "controllers.azureMachinePoolService.Reconcile")
+	ctx, span := tele.Tracer().Start(
+		ctx,
+		"controllers.azureMachinePoolService.Reconcile",
+	)
 	defer span.End()
 
 	if err := s.virtualMachinesScaleSetSvc.Reconcile(ctx); err != nil {
