@@ -22,11 +22,15 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2020-10-01/resources"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/cluster-api-provider-azure/azure"
 
 	e2e_namespace "sigs.k8s.io/cluster-api-provider-azure/test/e2e/kubernetes/namespace"
 
@@ -143,6 +147,23 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		Deleter: clusterProxy.GetClient(),
 		Name:    namespace.Name,
 	})
+
+	Byf("Checking if any resources are left over in Azure for spec %q", specName)
+	ExpectResourceGroupToBe404(ctx)
+}
+
+// ExpectResourceGroupToBe404 performs a GET request to Azure to determine if the cluster resource group still exists.
+// If it does still exist, it means the cluster was not deleted and is leaking Azure resources.
+func ExpectResourceGroupToBe404(ctx context.Context) {
+	settings, err := auth.GetSettingsFromEnvironment()
+	Expect(err).NotTo(HaveOccurred())
+	subscriptionID := settings.GetSubscriptionID()
+	authorizer, err := settings.GetAuthorizer()
+	Expect(err).NotTo(HaveOccurred())
+	groupsClient := resources.NewGroupsClient(subscriptionID)
+	groupsClient.Authorizer = authorizer
+	_, err = groupsClient.Get(ctx, os.Getenv(AzureResourceGroup))
+	Expect(azure.ResourceNotFound(err)).To(BeTrue(), "The resource group in Azure still exists. After deleting the cluster all of the Azure resources should also be deleted.")
 }
 
 func redactLogs() {
