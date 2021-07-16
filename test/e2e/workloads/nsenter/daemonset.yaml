@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: &name nsenter
+  labels:
+    app: *name
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+    spec:
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - image: alexeldeib/nsenter:latest
+        name: nsenter
+        command: ["/sleep", "infinity"]
+        resources:
+          requests: {}
+          limits: {}
+        securityContext:
+          privileged: true
+        

@@ -22,13 +22,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-30/compute"
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/mod/semver"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	infraexpv1 "sigs.k8s.io/cluster-api-provider-azure/exp/api/v1alpha4"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -83,6 +81,7 @@ func DiscoverAndWaitForControlPlaneInitialized(ctx context.Context, input Discov
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAtLeastOneControlPlaneAndMachineToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
+		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
 		ClusterName:  input.Cluster.Name,
@@ -106,6 +105,7 @@ func DiscoverAndWaitForControlPlaneReady(ctx context.Context, input DiscoverAndW
 
 	Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForAllControlPlaneAndMachinesToExist(ctx, WaitForControlPlaneAndMachinesReadyInput{
+		Lister:       input.Lister,
 		Getter:       input.Getter,
 		ControlPlane: controlPlane,
 		ClusterName:  input.Cluster.Name,
@@ -136,6 +136,7 @@ func GetAzureManagedControlPlaneByCluster(ctx context.Context, input GetAzureMan
 // WaitForControlPlaneAndMachinesReadyInput contains the fields required for checking the status of azure managed control plane machines.
 type WaitForControlPlaneAndMachinesReadyInput struct {
 	Getter       framework.Getter
+	Lister       framework.Lister
 	ControlPlane *infraexpv1.AzureManagedControlPlane
 	ClusterName  string
 	Namespace    string
@@ -237,40 +238,4 @@ func byClusterOptions(name, namespace string) []client.ListOption {
 			clusterv1.ClusterLabelName: name,
 		},
 	}
-}
-
-// AKSResourcesValidationSpecInput is the input for AKSResourcesValidationSpec
-type AKSResourcesValidationSpecInput struct {
-	BootstrapClusterProxy framework.ClusterProxy
-	Namespace             *corev1.Namespace
-	ClusterName           string
-}
-
-// AKSResourcesValidationSpec implements a test that verifies the resources created by an AKS cluster.
-func AKSResourcesValidationSpec(ctx context.Context, inputGetter func() AKSResourcesValidationSpecInput) {
-	var (
-		specName = "aks-resources-validation"
-		input    AKSResourcesValidationSpecInput
-	)
-
-	input = inputGetter()
-	Expect(input.ClusterName).NotTo(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling %s spec", specName)
-
-	By("creating Azure clients with the workload cluster's subscription, and querying for vmss")
-	var controlPlane = &infraexpv1.AzureManagedControlPlane{}
-	Expect(input.BootstrapClusterProxy.GetClient().Get(ctx,
-		types.NamespacedName{input.Namespace.Name, input.ClusterName}, controlPlane)).To(Succeed())
-
-	settings, err := auth.GetSettingsFromEnvironment()
-	Expect(err).NotTo(HaveOccurred())
-	subscriptionID := settings.GetSubscriptionID()
-	authorizer, err := settings.GetAuthorizer()
-	Expect(err).NotTo(HaveOccurred())
-	vmssClient := compute.NewVirtualMachineScaleSetsClient(subscriptionID)
-	vmssClient.Authorizer = authorizer
-
-	rgName := controlPlane.Spec.NodeResourceGroupName
-	scalesets, err := vmssClient.List(ctx, rgName)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(len(scalesets.Values())).To(BeNumerically(">", 0))
 }

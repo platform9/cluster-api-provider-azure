@@ -254,15 +254,15 @@ func (r *azureManagedControlPlaneReconciler) reconcileEndpoint(ctx context.Conte
 		return fmt.Errorf("expected containerservice ManagedCluster object")
 	}
 
-	old := scope.ControlPlane.DeepCopy()
-
-	scope.ControlPlane.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
-		Host: *managedCluster.ManagedClusterProperties.Fqdn,
-		Port: 443,
+	fqdn := *managedCluster.ManagedClusterProperties.Fqdn
+	if fqdn == "" {
+		return fmt.Errorf("managed cluster fqdn not populated yet")
 	}
 
-	if err := r.kubeclient.Patch(ctx, scope.ControlPlane, client.MergeFrom(old)); err != nil {
-		return errors.Wrap(err, "failed to set control plane endpoint")
+	scope.Logger.Info("control plane endpoint", "fqdn", fqdn)
+	scope.ControlPlane.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+		Host: fqdn,
+		Port: 443,
 	}
 
 	return nil

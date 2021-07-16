@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/util/kubeconfig"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 )
 
 // Test suite constants for e2e config variables
@@ -124,6 +125,23 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, specName string, clusterPr
 		Namespace: namespace.Name,
 		LogPath:   filepath.Join(artifactFolder, "clusters", clusterProxy.GetName(), "resources"),
 	})
+
+	workloadClient := clusterProxy.GetWorkloadCluster(ctx, cluster.Namespace, cluster.Name).GetClient()
+	nodeLogPath := filepath.Join(artifactFolder, "clusters", clusterProxy.GetName(), "nodes.yaml")
+
+	var nodeList corev1.NodeList
+	if err := workloadClient.List(ctx, &nodeList); err != nil {
+		Logf("failed listing nodes while dumping resources: %v", err)
+	} else {
+		nodeListYaml, err := yaml.Marshal(nodeList)
+		if err != nil {
+			Logf("failed to marshal node list to yaml: %v", err)
+		} else {
+			if err := ioutil.WriteFile(nodeLogPath, nodeListYaml, 0640); err != nil {
+				Logf("failed writing node list to log file: %v", err)
+			}
+		}
+	}
 
 	if skipCleanup {
 		return

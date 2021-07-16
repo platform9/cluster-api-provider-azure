@@ -18,6 +18,7 @@ package agentpools
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2020-02-01/containerservice"
 	"github.com/google/go-cmp/cmp"
@@ -80,8 +81,9 @@ func (s *Service) Reconcile(ctx context.Context, spec interface{}) error {
 	} else {
 		ps := *existingPool.ManagedClusterAgentPoolProfileProperties.ProvisioningState
 		if ps != "Canceled" && ps != "Failed" && ps != "Succeeded" {
-			klog.V(2).Infof("Unable to update existing agent pool in non terminal state.  Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded")
-			return nil
+			msg := fmt.Sprintf("Unable to update existing agent pool in non terminal state. Agent pool must be in one of the following provisioning states: canceled, failed, or succeeded. Actual state: %s", ps)
+			klog.V(2).Infof(msg)
+			return errors.New(msg)
 		}
 
 		// Normalize individual agent pools to diff in case we need to update
